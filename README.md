@@ -1,6 +1,4 @@
-# DeCal Backend API
-
-Backend API for the DeCal (Democratic Education at Cal) course management system.
+# DeCal
 
 ## Setup
 
@@ -67,6 +65,4 @@ The backend expects the following Supabase tables:
 - `approved_courses` - Approved courses from Google Sheets
 - `sections` - Course sections
 - `facilitators` - Course facilitators
-
-See the main project documentation for detailed schema definitions.
 
