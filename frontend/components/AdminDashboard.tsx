@@ -65,11 +65,11 @@ export function AdminDashboard() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-700">🟡 Pending</Badge>;
+        return <Badge className="bg-yellow-100 text-yellow-700">Pending</Badge>;
       case 'approved':
-        return <Badge className="bg-green-100 text-green-700">✅ Approved</Badge>;
+        return <Badge className="bg-green-100 text-green-700">Approved</Badge>;
       case 'rejected':
-        return <Badge className="bg-red-100 text-red-700">❌ Rejected</Badge>;
+        return <Badge className="bg-red-100 text-red-700">Rejected</Badge>;
       default:
         return null;
     }

@@ -41,7 +41,7 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn = false, userRo
         {/* Logo and Brand */}
         <div className="flex items-center cursor-pointer" onClick={() => handleNavigate('courses')}>
           <img 
-            src="https://decal.studentorg.berkeley.edu/assets/branding/logo-e8ca9a3ce20b1618fbefe1cedce265e61b2b508e5ce38c3aaf7a236e1740f5b8.png" 
+            src="/logo-e8ca9a3ce20b1618fbefe1cedce265e61b2b508e5ce38c3aaf7a236e1740f5b8.png" 
             alt="DeCal @ Berkeley" 
             className="h-10"
           />
@@ -82,7 +82,7 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn = false, userRo
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Admin Dashboard */}
+          {/* Admin Dashboard 
           <button
             onClick={() => handleNavigate('admin')}
             className={`text-white/80 hover:text-white transition-colors ${
@@ -91,6 +91,7 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn = false, userRo
           >
             Admin Dashboard (TEMPORARY)
           </button>
+          */}
         </div>
 
         {/* Right Side Actions */}
