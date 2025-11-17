@@ -24,8 +24,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'DeCal API is running' });
 });
 
-app.use('/api/course', authMiddleware, courseRoutes);
-app.use('/api', authMiddleware, adminRoutes);
+app.use('/api', authMiddleware, apiRoutes);
 
 app.use((err, req, res, next) => {
   console.error('Error:', err);
