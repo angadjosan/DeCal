@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Navigation } from './components/Navigation';
 import { CoursesPage } from './components/CoursesPage';
 import { SubmissionForm } from './components/SubmissionForm';
@@ -70,8 +70,8 @@ export default function App() {
       />
       <Routes>
         <Route path="/" element={<CoursesPage />} />
-        <Route path="/courses" element={<CoursesPage />} />
-        <Route path="/submit" element={<SubmissionForm />} />
+        <Route path="/courses" element={<CoursesPage />} /> 
+        <Route path="/submit" element={isLoggedIn ? <SubmissionForm /> : <Navigate to="/courses" replace />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/login" element={<LoginPage onLogin={handleGoogleLogin} />} />
         <Route path="/about" element={<StaticPages page="about" />} />
