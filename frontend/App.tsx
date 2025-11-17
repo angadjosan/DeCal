@@ -66,6 +66,7 @@ export default function App() {
         isLoggedIn={isLoggedIn}
         userRole={userRole}
         handleGoogleLogin={handleGoogleLogin}
+        handleLogout={handleLogout}
       />
       <Routes>
         <Route path="/" element={<CoursesPage />} />

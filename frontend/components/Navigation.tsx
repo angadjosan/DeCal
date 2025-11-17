@@ -14,9 +14,10 @@ interface NavigationProps {
   isLoggedIn?: boolean;
   userRole?: 'student' | 'facilitator' | 'admin';
   handleGoogleLogin: () => void;
+  handleLogout?: () => void;
 }
 
-export function Navigation({ isLoggedIn = false, userRole, handleGoogleLogin }: NavigationProps) {
+export function Navigation({ isLoggedIn = false, userRole, handleGoogleLogin, handleLogout }: NavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
 
@@ -114,11 +115,20 @@ export function Navigation({ isLoggedIn = false, userRole, handleGoogleLogin }: 
           )}
           
           {isLoggedIn && (
-            <div className="hidden md:flex items-center gap-2">
-              <div className="w-8 h-8 bg-[#FDB515] rounded-full flex items-center justify-center cursor-pointer">
-                <User className="h-4 w-4 text-[#003262]" />
-              </div>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="hidden md:flex items-center gap-2 focus:outline-none">
+                  <div className="w-8 h-8 bg-[#FDB515] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#FDB515]/90 transition-colors">
+                    <User className="h-4 w-4 text-[#003262]" />
+                  </div>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
 
           {/* Mobile Menu */}
