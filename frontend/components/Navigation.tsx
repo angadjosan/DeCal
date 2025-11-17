@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Menu, User, ChevronDown } from 'lucide-react';
 import { Button } from './ui/button';
 import { Sheet, SheetContent, SheetTrigger } from './ui/sheet';
@@ -10,28 +11,26 @@ import {
 } from './ui/dropdown-menu';
 
 interface NavigationProps {
-  currentPage: string;
-  onNavigate: (page: string) => void;
   isLoggedIn?: boolean;
   userRole?: 'student' | 'facilitator' | 'admin';
 }
 
-export function Navigation({ currentPage, onNavigate, isLoggedIn = false, userRole }: NavigationProps) {
+export function Navigation({ isLoggedIn = false, userRole }: NavigationProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const location = useLocation();
 
   const navItems = [
-    { label: 'Courses', value: 'courses' },
-    { label: 'Submit a DeCal', value: 'submit' }
+    { label: 'Courses', path: '/courses' },
+    { label: 'Submit a DeCal', path: '/submit' }
   ];
 
   const resourcesItems = [
-    { label: 'About', value: 'about' },
-    { label: 'FAQ', value: 'faq' },
-    { label: 'How to Facilitate', value: 'facilitate' }
+    { label: 'About', path: '/about' },
+    { label: 'FAQ', path: '/faq' },
+    { label: 'How to Facilitate', path: '/facilitate' }
   ];
 
-  const handleNavigate = (page: string) => {
-    onNavigate(page);
+  const handleMobileMenuClose = () => {
     setMobileMenuOpen(false);
   };
 
@@ -39,26 +38,26 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn = false, userRo
     <nav className="fixed top-0 left-0 right-0 z-50 bg-[#003262] border-b border-[#003262]/20">
       <div className="max-w-[1440px] mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo and Brand */}
-        <div className="flex items-center cursor-pointer" onClick={() => handleNavigate('courses')}>
+        <Link to="/courses" className="flex items-center">
           <img 
             src="/logo-e8ca9a3ce20b1618fbefe1cedce265e61b2b508e5ce38c3aaf7a236e1740f5b8.png" 
             alt="DeCal @ Berkeley" 
             className="h-10"
           />
-        </div>
+        </Link>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center gap-8">
           {navItems.map((item) => (
-            <button
-              key={item.value}
-              onClick={() => handleNavigate(item.value)}
+            <Link
+              key={item.path}
+              to={item.path}
               className={`text-white/80 hover:text-white transition-colors ${
-                currentPage === item.value ? 'text-white' : ''
+                location.pathname === item.path ? 'text-white' : ''
               }`}
             >
               {item.label}
-            </button>
+            </Link>
           ))}
           
           {/* Resources Dropdown */}
@@ -71,26 +70,24 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn = false, userRo
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
               {resourcesItems.map((item) => (
-                <DropdownMenuItem
-                  key={item.value}
-                  onClick={() => handleNavigate(item.value)}
-                  className="cursor-pointer"
-                >
-                  {item.label}
+                <DropdownMenuItem key={item.path} asChild>
+                  <Link to={item.path} className="cursor-pointer">
+                    {item.label}
+                  </Link>
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
 
           {/* Admin Dashboard 
-          <button
-            onClick={() => handleNavigate('admin')}
+          <Link
+            to="/admin"
             className={`text-white/80 hover:text-white transition-colors ${
-              currentPage === 'admin' ? 'text-white' : ''
+              location.pathname === '/admin' ? 'text-white' : ''
             }`}
           >
             Admin Dashboard (TEMPORARY)
-          </button>
+          </Link>
           */}
         </div>
 
@@ -114,43 +111,46 @@ export function Navigation({ currentPage, onNavigate, isLoggedIn = false, userRo
             <SheetContent side="right" className="w-[280px]">
               <div className="flex flex-col gap-4 mt-8">
                 {navItems.map((item) => (
-                  <button
-                    key={item.value}
-                    onClick={() => handleNavigate(item.value)}
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={handleMobileMenuClose}
                     className={`text-left p-2 rounded-lg hover:bg-gray-100 ${
-                      currentPage === item.value ? 'bg-gray-100 text-[#003262]' : 'text-gray-700'
+                      location.pathname === item.path ? 'bg-gray-100 text-[#003262]' : 'text-gray-700'
                     }`}
                   >
                     {item.label}
-                  </button>
+                  </Link>
                 ))}
                 
                 {/* Resources Section in Mobile */}
                 <div className="border-t border-gray-200 pt-4 mt-2">
                   <div className="text-xs text-gray-500 mb-2 px-2">Resources</div>
                   {resourcesItems.map((item) => (
-                    <button
-                      key={item.value}
-                      onClick={() => handleNavigate(item.value)}
-                      className={`text-left p-2 rounded-lg hover:bg-gray-100 w-full ${
-                        currentPage === item.value ? 'bg-gray-100 text-[#003262]' : 'text-gray-700'
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      onClick={handleMobileMenuClose}
+                      className={`text-left p-2 rounded-lg hover:bg-gray-100 w-full block ${
+                        location.pathname === item.path ? 'bg-gray-100 text-[#003262]' : 'text-gray-700'
                       }`}
                     >
                       {item.label}
-                    </button>
+                    </Link>
                   ))}
                 </div>
 
                 {/* Admin Dashboard in Mobile */}
                 <div className="border-t border-gray-200 pt-4 mt-2">
-                  <button
-                    onClick={() => handleNavigate('admin')}
-                    className={`text-left p-2 rounded-lg hover:bg-gray-100 w-full ${
-                      currentPage === 'admin' ? 'bg-gray-100 text-[#003262]' : 'text-gray-700'
+                  <Link
+                    to="/admin"
+                    onClick={handleMobileMenuClose}
+                    className={`text-left p-2 rounded-lg hover:bg-gray-100 w-full block ${
+                      location.pathname === '/admin' ? 'bg-gray-100 text-[#003262]' : 'text-gray-700'
                     }`}
                   >
                     Admin Dashboard (TEMPORARY)
-                  </button>
+                  </Link>
                 </div>
               </div>
             </SheetContent>

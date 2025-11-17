@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Lock } from 'lucide-react';
 
@@ -6,12 +7,15 @@ interface LoginPageProps {
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
+  const navigate = useNavigate();
+  
   const handleLogin = () => {
     // Simulate login - in a real app this would use OAuth
     // For demo purposes, randomly assign a role
     const roles: Array<'student' | 'facilitator' | 'admin'> = ['student', 'facilitator', 'admin'];
     const randomRole = roles[Math.floor(Math.random() * roles.length)];
     onLogin(randomRole);
+    navigate('/courses');
   };
 
   return (
