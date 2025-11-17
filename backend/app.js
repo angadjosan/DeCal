@@ -2,8 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
-import courseRoutes from './routes/courseRoutes.js';
-import adminRoutes from './routes/adminRoutes.js';
+import routes from './routes/routes.js';
 import { authMiddleware } from './middleware/auth.js';
 
 dotenv.config();
@@ -24,7 +23,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'DeCal API is running' });
 });
 
-app.use('/api', authMiddleware, apiRoutes);
+app.use('/api', authMiddleware, routes);
 
 app.use((err, req, res, next) => {
   console.error('Error:', err);
@@ -43,4 +42,3 @@ app.listen(PORT, () => {
 });
 
 export default app;
-
