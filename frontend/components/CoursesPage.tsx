@@ -22,11 +22,14 @@ export function CoursesPage() {
   const [timeCommitment, setTimeCommitment] = useState([10]);
 
   const categories = [
-    'Arts & Creativity',
-    'Business & Entrepreneurship',
-    'Health & Wellness',
-    'Science & Technology',
-    'Social Impact'
+    'Publication',
+    'Health',
+    'Environment',
+    'Cultural',
+    'Political/Social',
+    'Media',
+    'Professional/Business',
+    'Food'
   ];
 
   const filteredCourses = useMemo(() => {
