@@ -22,32 +22,14 @@ import {
 import { toast } from "sonner";
 
 const categories = [
-  "Arts & Creativity",
-  "Business & Entrepreneurship",
-  "Health & Wellness",
-  "Science & Technology",
-  "Social Impact",
-  "Other",
-];
-
-const departments = [
-  "Computer Science",
-  "English",
-  "Economics",
-  "Public Health",
-  "Sociology",
-  "Business",
-  "Art Practice",
-  "Environmental Science",
-  "Psychology",
-  "Political Science",
-  "Mathematics",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "History",
-  "Philosophy",
-  "Other",
+  "Publication",
+  "Health",
+  "Environment",
+  "Cultural",
+  "Political/Social",
+  "Media",
+  "Professional/Business",
+  "Food",
 ];
 
 // Generate current and next semesters
@@ -317,23 +299,14 @@ export function SubmissionForm() {
                   <Label htmlFor="department">
                     Department *
                   </Label>
-                  <Select
+                  <Input
+                    id="department"
                     value={formData.department}
-                    onValueChange={(value) =>
-                      handleChange("department", value)
+                    onChange={(e) =>
+                      handleChange("department", e.target.value)
                     }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select department" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {departments.map((dept) => (
-                        <SelectItem key={dept} value={dept}>
-                          {dept}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    placeholder="e.g., Computer Science, English, Economics"
+                  />
                 </div>
 
                 <div>
