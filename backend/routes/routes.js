@@ -340,40 +340,4 @@ router.post('/rejectCourse', adminMiddleware, async (req, res) => {
   }
 });
 
-router.get('/approvedCourses', async (req, res) => {
-  try {
-    const { data: courses, error } = await courseService.getAll('Active');
-
-    if (error) {
-      console.error('Error fetching approved courses:', error);
-      return res.status(500).json({ error: 'Failed to fetch courses', details: error.message });
-    }
-
-    const sanitizedCourses = courses.map(course => ({
-      id: course.id,
-      semester: course.semester,
-      title: course.title,
-      department: course.department,
-      category: course.category,
-      units: course.units,
-      contact_email: course.contact_email,
-      website: course.website,
-      description: course.description,
-      faculty_sponsor_name: course.faculty_sponsor_name,
-      enrollment_information: course.enrollment_information,
-      application_url: course.application_url,
-      application_due_date: course.application_due_date,
-      time_to_complete: course.time_to_complete
-    }));
-
-    res.status(200).json({
-      success: true,
-      courses: sanitizedCourses
-    });
-  } catch (error) {
-    console.error('Error in approvedCourses endpoint:', error);
-    res.status(500).json({ error: 'Internal server error', details: error.message });
-  }
-});
-
 export default router;
