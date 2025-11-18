@@ -16,6 +16,8 @@ import {
   Upload,
   FileText,
   CheckCircle2,
+  X,
+  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -91,6 +93,21 @@ export function SubmissionForm() {
     cpf_file: null as File | null,
   });
 
+  const [sections, setSections] = useState<Array<{
+    id: number;
+    enrollmentStatus: string;
+    day: string;
+    time: string;
+    room: string;
+    notes: string;
+  }>>([]);
+
+  const [facilitators, setFacilitators] = useState<Array<{
+    id: number;
+    name: string;
+    email: string;
+  }>>([]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (field: string, value: string) => {
@@ -99,6 +116,45 @@ export function SubmissionForm() {
 
   const handleFileUpload = (file: File | null) => {
     setFormData({ ...formData, cpf_file: file });
+  };
+
+  const addSection = () => {
+    setSections([...sections, {
+      id: Date.now(),
+      enrollmentStatus: "Open",
+      day: "",
+      time: "",
+      room: "",
+      notes: ""
+    }]);
+  };
+
+  const removeSection = (id: number) => {
+    setSections(sections.filter(section => section.id !== id));
+  };
+
+  const updateSection = (id: number, field: string, value: string) => {
+    setSections(sections.map(section => 
+      section.id === id ? { ...section, [field]: value } : section
+    ));
+  };
+
+  const addFacilitator = () => {
+    setFacilitators([...facilitators, {
+      id: Date.now(),
+      name: "",
+      email: ""
+    }]);
+  };
+
+  const removeFacilitator = (id: number) => {
+    setFacilitators(facilitators.filter(facilitator => facilitator.id !== id));
+  };
+
+  const updateFacilitator = (id: number, field: string, value: string) => {
+    setFacilitators(facilitators.map(facilitator => 
+      facilitator.id === id ? { ...facilitator, [field]: value } : facilitator
+    ));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -459,7 +515,169 @@ export function SubmissionForm() {
             </div>
 
             <hr className="border-gray-200" />
+            
+            {/* Sections */}
+            <div className="space-y-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-[#003262]">
+                  Sections
+                </h3>
+                <Button
+                  type="button"
+                  onClick={addSection}
+                  variant="outline"
+                  size="sm"
+                  className="flex items-center gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add New Section
+                </Button>
+              </div>
 
+              {sections.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">No sections added yet. Click "Add New Section" to get started.</p>
+              ) : (
+                <div className="space-y-4">
+                  {sections.map((section, index) => (
+                    <Card key={section.id} className="p-4 relative">
+                      <button
+                        type="button"
+                        onClick={() => removeSection(section.id)}
+                        className="absolute top-2 right-2 text-gray-400 hover:text-red-600 transition-colors"
+                      >
+                        <X className="h-5 w-5" />
+                      </button>
+                      
+                      <h4 className="font-semibold text-sm mb-3 text-[#003262]">Section {index + 1}</h4>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor={`section-status-${section.id}`}>Enrollment Status *</Label>
+                          <Select
+                            value={section.enrollmentStatus}
+                            onValueChange={(value) => updateSection(section.id, 'enrollmentStatus', value)}
+                          >
+                            <SelectTrigger id={`section-status-${section.id}`}>
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Open">Open</SelectItem>
+                              <SelectItem value="Full">Full</SelectItem>
+                              <SelectItem value="Waitlist">Waitlist</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label htmlFor={`section-day-${section.id}`}>Day *</Label>
+                          <Input
+                            id={`section-day-${section.id}`}
+                            value={section.day}
+                            onChange={(e) => updateSection(section.id, 'day', e.target.value)}
+                            placeholder="e.g., Monday, Wednesday"
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor={`section-time-${section.id}`}>Time *</Label>
+                          <Input
+                            id={`section-time-${section.id}`}
+                            value={section.time}
+                            onChange={(e) => updateSection(section.id, 'time', e.target.value)}
+                            placeholder="e.g., 6:00 PM - 8:00 PM"
+                          />
+                        </div>
+
+                        <div>
+                          <Label htmlFor={`section-room-${section.id}`}>Room *</Label>
+                          <Input
+                            id={`section-room-${section.id}`}
+                            value={section.room}
+                            onChange={(e) => updateSection(section.id, 'room', e.target.value)}
+                            placeholder="e.g., Wheeler 150"
+                          />
+                        </div>
+
+                        <div className="md:col-span-2">
+                          <Label htmlFor={`section-notes-${section.id}`}>Notes for Students</Label>
+                          <Textarea
+                            id={`section-notes-${section.id}`}
+                            value={section.notes}
+                            onChange={(e) => updateSection(section.id, 'notes', e.target.value)}
+                            placeholder="Any additional information (e.g., class numbers, prerequisites)"
+                            rows={2}
+                          />
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h4 className="text-[#003262] font-semibold">
+                    Facilitators
+                  </h4>
+                  <Button
+                    type="button"
+                    onClick={addFacilitator}
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add New Facilitator
+                  </Button>
+                </div>
+
+                {facilitators.length === 0 ? (
+                  <p className="text-sm text-gray-500 italic">No facilitators added yet.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {facilitators.map((facilitator, index) => (
+                      <Card key={facilitator.id} className="p-4 relative">
+                        <button
+                          type="button"
+                          onClick={() => removeFacilitator(facilitator.id)}
+                          className="absolute top-2 right-2 text-gray-400 hover:text-red-600 transition-colors"
+                        >
+                          <X className="h-5 w-5" />
+                        </button>
+                        
+                        <h5 className="font-semibold text-sm mb-3 text-[#003262]">Facilitator {index + 1}</h5>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label htmlFor={`facilitator-name-${facilitator.id}`}>Name *</Label>
+                            <Input
+                              id={`facilitator-name-${facilitator.id}`}
+                              value={facilitator.name}
+                              onChange={(e) => updateFacilitator(facilitator.id, 'name', e.target.value)}
+                              placeholder="Facilitator name"
+                            />
+                          </div>
+
+                          <div>
+                            <Label htmlFor={`facilitator-email-${facilitator.id}`}>Email *</Label>
+                            <Input
+                              id={`facilitator-email-${facilitator.id}`}
+                              type="email"
+                              value={facilitator.email}
+                              onChange={(e) => updateFacilitator(facilitator.id, 'email', e.target.value)}
+                              placeholder="facilitator@berkeley.edu"
+                            />
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <hr className="border-gray-200" />
+            
             {/* Additional Details (Optional) */}
             <div className="space-y-6">
               <div>
