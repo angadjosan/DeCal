@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { adminMiddleware } from '../middleware/auth.js';
+import { adminMiddleware, authMiddleware } from '../middleware/auth.js';
 import { courseService, approvedCourseService, crossValidateCourse } from '../services/dbService.js';
 import { sendApprovalEmail, sendRejectionEmail } from '../services/emailService.js';
 import { supabase } from '../app.js';
@@ -37,7 +37,7 @@ function getCurrentSemester() {
   }
 }
 
-router.post('/submitCourse', upload.single('cpf_file'), async (req, res) => {
+router.post('/submitCourse', authMiddleware, upload.single('cpf_file'), async (req, res) => {
   try {
     // Parse the JSON data from the form
     const courseData = JSON.parse(req.body.data);
@@ -90,11 +90,13 @@ router.post('/submitCourse', upload.single('cpf_file'), async (req, res) => {
       .from('decal-submissions')
       .getPublicUrl(filePath);
 
+    // Extract sections and facilitators before creating course
+    const { sections, facilitators, facilitatorEmails, ...coreFields } = courseData;
+
     // Add file URL to course data
     const courseObj = {
-      ...courseData,
-      cpf: urlData.publicUrl,
-      cpf_file_path: filePath // Store path for potential deletion later
+      ...coreFields,
+      cpf: urlData.publicUrl
     };
 
     // Create course in database
@@ -111,6 +113,43 @@ router.post('/submitCourse', upload.single('cpf_file'), async (req, res) => {
         error: 'Failed to create course', 
         details: error.message 
       });
+    }
+
+    // Insert sections if provided
+    if (sections && sections.length > 0) {
+      const sectionsToInsert = sections.map(section => ({
+        course_id: data.id,
+        enrollment_status: section.enrollment_status,
+        day: section.day,
+        time: section.time,
+        room: section.room,
+        notes: section.notes || null
+      }));
+
+      const { error: sectionsError } = await supabase
+        .from('course_sections')
+        .insert(sectionsToInsert);
+
+      if (sectionsError) {
+        console.error('Error inserting sections:', sectionsError);
+      }
+    }
+
+    // Insert facilitators if provided
+    if (facilitators && facilitators.length > 0) {
+      const facilitatorsToInsert = facilitators.map(facilitator => ({
+        course_id: data.id,
+        name: facilitator.name,
+        email: facilitator.email
+      }));
+
+      const { error: facilitatorsError } = await supabase
+        .from('course_facilitators')
+        .insert(facilitatorsToInsert);
+
+      if (facilitatorsError) {
+        console.error('Error inserting facilitators:', facilitatorsError);
+      }
     }
 
     // Perform cross-validation

@@ -20,6 +20,7 @@ import {
   Plus,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Session } from "@supabase/supabase-js";
 
 const categories = [
   "Publication",
@@ -56,7 +57,11 @@ const generateSemesters = () => {
   return semesters;
 };
 
-export function SubmissionForm() {
+interface SubmissionFormProps {
+  session: Session | null;
+}
+
+export function SubmissionForm({ session }: SubmissionFormProps) {
   const [formData, setFormData] = useState({
     semester: "",
     title: "",
@@ -263,9 +268,19 @@ export function SubmissionForm() {
       
       formDataToSend.append('data', JSON.stringify(submissionData));
 
-      // Make API call with FormData (no Content-Type header - browser sets it automatically)
+      // Get the JWT token from session
+      const token = session?.access_token;
+      
+      if (!token) {
+        throw new Error('You must be logged in to submit a course');
+      }
+
+      // Make API call with FormData and Authorization header
       const response = await fetch('/api/submitCourse', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
         body: formDataToSend,
       });
 
