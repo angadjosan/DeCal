@@ -32,19 +32,17 @@ export const adminMiddleware = async (req, res, next) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    const { data: userData, error } = await supabase
-      .from('users')
-      .select('permissions')
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('is_admin')
       .eq('id', user.id)
       .single();
 
-    if (error || !userData) {
+    if (error || !profile) {
       return res.status(403).json({ error: 'Unable to verify permissions' });
     }
-
-    const permissions = userData.permissions || [];
     
-    if (!permissions.includes('ReadAll')) {
+    if (!profile.is_admin) {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
 
