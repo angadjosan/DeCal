@@ -186,6 +186,17 @@ export function SubmissionForm() {
 
     setIsSubmitting(true);
 
+    // Prepare data for submission with proper type conversions
+    const submissionData = {
+      ...formData,
+      // Convert units from string to integer
+      units: parseInt(formData.units, 10),
+      // Convert application_due_date to timestamp (ISO 8601 format for Supabase)
+      application_due_date: formData.application_due_date 
+        ? new Date(formData.application_due_date).toISOString() 
+        : null,
+    };
+
     // Simulate API call
     setTimeout(() => {
       setIsSubmitting(false);
@@ -211,6 +222,8 @@ export function SubmissionForm() {
         syllabus_text: "",
         cpf_file: null,
       });
+      setSections([]);
+      setFacilitators([]);
     }, 1500);
   };
 
