@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
@@ -62,6 +63,7 @@ interface SubmissionFormProps {
 }
 
 export function SubmissionForm({ session }: SubmissionFormProps) {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     semester: "",
     title: "",
@@ -314,6 +316,9 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
       });
       setSections([]);
       setFacilitators([]);
+      
+      // Navigate to courses page
+      navigate('/courses');
     } catch (error) {
       console.error('Submission error:', error);
       toast.error(
