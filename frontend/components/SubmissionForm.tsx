@@ -173,6 +173,18 @@ export function SubmissionForm() {
       return;
     }
 
+    // Validate file type
+    if (formData.cpf_file.type !== 'application/pdf') {
+      toast.error("CPF file must be a PDF");
+      return;
+    }
+
+    // Validate file size (max 50MB)
+    if (formData.cpf_file.size > 50 * 1024 * 1024) {
+      toast.error("CPF file must be less than 50MB");
+      return;
+    }
+
     // Validate email formats
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.contact_email)) {
@@ -184,22 +196,85 @@ export function SubmissionForm() {
       return;
     }
 
+    // Validate sections if any are added
+    if (sections.length > 0) {
+      const incompleteSections = sections.filter(s => !s.day || !s.time || !s.room);
+      if (incompleteSections.length > 0) {
+        toast.error("Please complete all section fields");
+        return;
+      }
+    }
+
+    // Validate facilitators if any are added
+    if (facilitators.length > 0) {
+      const incompleteFacilitators = facilitators.filter(f => !f.name || !f.email);
+      if (incompleteFacilitators.length > 0) {
+        toast.error("Please complete all facilitator fields");
+        return;
+      }
+
+      const invalidEmails = facilitators.filter(f => !emailRegex.test(f.email));
+      if (invalidEmails.length > 0) {
+        toast.error("Please enter valid facilitator emails");
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
-    // Prepare data for submission with proper type conversions
-    const submissionData = {
-      ...formData,
-      // Convert units from string to integer
-      units: parseInt(formData.units, 10),
-      // Convert application_due_date to timestamp (ISO 8601 format for Supabase)
-      application_due_date: formData.application_due_date 
-        ? new Date(formData.application_due_date).toISOString() 
-        : null,
-    };
+    try {
+      // Create FormData to send file and data together
+      const formDataToSend = new FormData();
+      
+      // Add the CPF file
+      formDataToSend.append('cpf_file', formData.cpf_file);
+      
+      // Add all other form data as JSON string
+      const submissionData = {
+        semester: formData.semester,
+        title: formData.title,
+        department: formData.department,
+        category: formData.category,
+        units: parseInt(formData.units, 10),
+        contact_email: formData.contact_email,
+        website: formData.website || null,
+        description: formData.description,
+        faculty_sponsor_name: formData.faculty_sponsor_name,
+        faculty_sponsor_email: formData.faculty_sponsor_email,
+        enrollment_information: formData.enrollment_information || null,
+        application_url: formData.application_url || null,
+        application_due_date: formData.application_due_date 
+          ? new Date(formData.application_due_date).toISOString() 
+          : null,
+        syllabus: formData.syllabus_text,
+        sections: sections.map(s => ({
+          enrollment_status: s.enrollmentStatus,
+          day: s.day,
+          time: s.time,
+          room: s.room,
+          notes: s.notes || null
+        })),
+        facilitatorEmails: facilitators.map(f => f.email),
+        facilitators: facilitators.map(f => ({
+          name: f.name,
+          email: f.email
+        }))
+      };
+      
+      formDataToSend.append('data', JSON.stringify(submissionData));
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
+      // Make API call with FormData (no Content-Type header - browser sets it automatically)
+      const response = await fetch('/api/submitCourse', {
+        method: 'POST',
+        body: formDataToSend,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to submit course');
+      }
+
       toast.success(
         "DeCal submission received! You will be notified once it has been reviewed.",
       );
@@ -224,7 +299,16 @@ export function SubmissionForm() {
       });
       setSections([]);
       setFacilitators([]);
-    }, 1500);
+    } catch (error) {
+      console.error('Submission error:', error);
+      toast.error(
+        error instanceof Error 
+          ? error.message 
+          : "Failed to submit course. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const semesters = generateSemesters();

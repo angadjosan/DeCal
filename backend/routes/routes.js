@@ -1,31 +1,119 @@
 import express from 'express';
+import multer from 'multer';
 import { adminMiddleware } from '../middleware/auth.js';
 import { courseService, approvedCourseService, crossValidateCourse } from '../services/dbService.js';
 import { sendApprovalEmail, sendRejectionEmail } from '../services/emailService.js';
+import { supabase } from '../app.js';
 
 const router = express.Router();
 
-router.post('/courses', async (req, res) => {
-  try {
-    const courseObj = req.body;
+// Configure multer for file upload handling (memory storage)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB max
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed'));
+    }
+  }
+});
 
-    if (!courseObj.title || !courseObj.faculty_sponsor_email) {
+// Helper function to get current semester
+function getCurrentSemester() {
+  const now = new Date();
+  const month = now.getMonth() + 1;
+  const year = now.getFullYear();
+  
+  if (month >= 8) {
+    return `Fall ${year}`;
+  } else if (month >= 1 && month <= 5) {
+    return `Spring ${year}`;
+  } else {
+    return `Summer ${year}`;
+  }
+}
+
+router.post('/submitCourse', upload.single('cpf_file'), async (req, res) => {
+  try {
+    // Parse the JSON data from the form
+    const courseData = JSON.parse(req.body.data);
+    const cpfFile = req.file;
+
+    if (!cpfFile) {
+      return res.status(400).json({ 
+        error: 'CPF file is required' 
+      });
+    }
+
+    if (!courseData.title || !courseData.faculty_sponsor_email) {
       return res.status(400).json({ 
         error: 'Missing required fields: title and faculty_sponsor_email are required' 
       });
     }
 
-    if (!courseObj.semester) {
-      courseObj.semester = getCurrentSemester();
+    if (!courseData.semester) {
+      courseData.semester = getCurrentSemester();
     }
 
+    // Generate unique filename
+    const timestamp = Date.now();
+    const sanitizedTitle = courseData.title
+      .replace(/[^a-z0-9]/gi, '_')
+      .toLowerCase()
+      .substring(0, 50); // Limit length
+    const fileName = `${timestamp}_${sanitizedTitle}.pdf`;
+    const filePath = `cpf-forms/${fileName}`;
+
+    // Upload file to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('decal-submissions')
+      .upload(filePath, cpfFile.buffer, {
+        contentType: 'application/pdf',
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) {
+      console.error('File upload error:', uploadError);
+      return res.status(500).json({ 
+        error: 'Failed to upload CPF file', 
+        details: uploadError.message 
+      });
+    }
+
+    // Get public URL for the uploaded file
+    const { data: urlData } = supabase.storage
+      .from('decal-submissions')
+      .getPublicUrl(filePath);
+
+    // Add file URL to course data
+    const courseObj = {
+      ...courseData,
+      cpf: urlData.publicUrl,
+      cpf_file_path: filePath // Store path for potential deletion later
+    };
+
+    // Create course in database
     const { data, error } = await courseService.create(courseObj);
 
     if (error) {
+      // If database insert fails, delete the uploaded file
+      await supabase.storage
+        .from('decal-submissions')
+        .remove([filePath]);
+      
       console.error('Error creating course:', error);
-      return res.status(500).json({ error: 'Failed to create course', details: error.message });
+      return res.status(500).json({ 
+        error: 'Failed to create course', 
+        details: error.message 
+      });
     }
 
+    // Perform cross-validation
     const validation = await crossValidateCourse(
       courseObj.faculty_sponsor_email,
       courseObj.semester
@@ -37,8 +125,6 @@ router.post('/courses', async (req, res) => {
       });
     }
 
-    // upload to database
-
     res.status(200).json({
       success: true,
       course: data,
@@ -49,7 +135,16 @@ router.post('/courses', async (req, res) => {
     });
   } catch (error) {
     console.error('Course submission error:', error);
-    res.status(500).json({ error: 'Internal server error', details: error.message });
+    
+    // Handle multer errors
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'File size exceeds 50MB limit' });
+    }
+    
+    res.status(500).json({ 
+      error: 'Internal server error', 
+      details: error.message 
+    });
   }
 });
 
