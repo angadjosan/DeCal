@@ -73,7 +73,6 @@ export default function App() {
         <Route path="/courses" element={<CoursesPage />} /> 
         <Route path="/submit" element={isLoggedIn ? <SubmissionForm session={session} /> : <Navigate to="/courses" replace />} />
         <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/login" element={<LoginPage onLogin={handleGoogleLogin} />} />
         <Route path="/about" element={<StaticPages page="about" />} />
         <Route path="/faq" element={<StaticPages page="faq" />} />
         <Route path="/facilitate" element={<StaticPages page="facilitate" />} />
