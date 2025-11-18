@@ -71,7 +71,7 @@ app.get('/api/approvedCourses', publicRateLimiter, async (req, res) => {
   }
 });
 
-app.use('/api', authMiddleware, routes);
+app.use('/api', routes);
 
 app.use((err, req, res, next) => {
   console.error('Error:', err);
