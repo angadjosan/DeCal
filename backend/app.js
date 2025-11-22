@@ -52,7 +52,29 @@ app.get('/api/approvedCourses', publicRateLimiter, async (req, res) => {
       return res.status(500).json({ error: 'Failed to fetch courses', details: error.message });
     }
 
-    const sanitizedCourses = courses.map(course => ({
+    const coursesWithDetails = await Promise.all(
+      courses.map(async (course) => {
+        // Fetch sections for this course
+        const { data: sections } = await supabase
+          .from('course_sections')
+          .select('*')
+          .eq('course_id', course.id);
+
+        // Fetch facilitators for this course
+        const { data: facilitators } = await supabase
+          .from('course_facilitators')
+          .select('*')
+          .eq('course_id', course.id);
+
+        return {
+          ...course,
+          sections: sections || [],
+          facilitators: facilitators || []
+        };
+      })
+    );
+
+    const sanitizedCourses = coursesWithDetails.map(course => ({
       id: course.id,
       semester: course.semester,
       title: course.title,
@@ -66,7 +88,9 @@ app.get('/api/approvedCourses', publicRateLimiter, async (req, res) => {
       enrollment_information: course.enrollment_information,
       application_url: course.application_url,
       application_due_date: course.application_due_date,
-      time_to_complete: course.time_to_complete
+      time_to_complete: course.time_to_complete,
+      sections: course.sections,
+      facilitators: course.facilitators
     }));
 
     res.status(200).json({

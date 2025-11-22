@@ -208,8 +208,22 @@ router.get('/unapprovedCourses', adminMiddleware, async (req, res) => {
           approvedCourseMatch = validation.approvedCourse;
         }
 
+        // Fetch sections for this course
+        const { data: sections } = await supabase
+          .from('course_sections')
+          .select('*')
+          .eq('course_id', course.id);
+
+        // Fetch facilitators for this course
+        const { data: facilitators } = await supabase
+          .from('course_facilitators')
+          .select('*')
+          .eq('course_id', course.id);
+
         return {
           ...course,
+          sections: sections || [],
+          facilitators: facilitators || [],
           crossValidation: {
             match: validation.match,
             approvedCourse: approvedCourseMatch
@@ -239,6 +253,8 @@ router.get('/unapprovedCourses', adminMiddleware, async (req, res) => {
       crossValidation: course.crossValidation,
       cpf: course.cpf,
       syllabus: course.syllabus,
+      sections: course.sections,
+      facilitators: course.facilitators,
       created_at: course.created_at
     }));
 
