@@ -38,6 +38,24 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Cache for approved courses
+let approvedCoursesCache = {
+  data: null,
+  timestamp: null,
+  ttl: 10 * 60 * 1000 // 10 minutes in milliseconds
+};
+
+// Helper function to check if cache is valid
+const isCacheValid = (cache) => {
+  return cache.data !== null && cache.timestamp !== null && (Date.now() - cache.timestamp) < cache.ttl;
+};
+
+// Function to clear the approved courses cache (can be called when courses are updated)
+export const clearApprovedCoursesCache = () => {
+  approvedCoursesCache.data = null;
+  approvedCoursesCache.timestamp = null;
+};
+
 app.get('/health', publicRateLimiter, (req, res) => {
   res.json({ status: 'ok', message: 'DeCal API is running' });
 });
@@ -45,6 +63,16 @@ app.get('/health', publicRateLimiter, (req, res) => {
 // Public endpoint for approved courses
 app.get('/api/approvedCourses', publicRateLimiter, async (req, res) => {
   try {
+    // Check if cache is valid
+    if (isCacheValid(approvedCoursesCache)) {
+      return res.status(200).json({
+        success: true,
+        courses: approvedCoursesCache.data,
+        cached: true
+      });
+    }
+
+    // Cache miss or expired - fetch from database
     const { data: courses, error } = await courseService.getAll('Active');
 
     if (error) {
@@ -93,9 +121,14 @@ app.get('/api/approvedCourses', publicRateLimiter, async (req, res) => {
       facilitators: course.facilitators
     }));
 
+    // Update cache
+    approvedCoursesCache.data = sanitizedCourses;
+    approvedCoursesCache.timestamp = Date.now();
+
     res.status(200).json({
       success: true,
-      courses: sanitizedCourses
+      courses: sanitizedCourses,
+      cached: false
     });
   } catch (error) {
     console.error('Error in approvedCourses endpoint:', error);
@@ -104,7 +137,7 @@ app.get('/api/approvedCourses', publicRateLimiter, async (req, res) => {
 });
 
 // Public endpoint for check if user is admin
-router.get('/admin/check', async (req, res) => {
+app.get('/admin/check', async (req, res) => {
   try {
     const user = req.user;
     
