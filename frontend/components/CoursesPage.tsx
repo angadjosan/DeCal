@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { CourseCard } from './CourseCard';
 import { CourseDetailModal } from './CourseDetailModal';
@@ -9,6 +9,7 @@ import { Slider } from './ui/slider';
 import { Course } from '../types';
 import { mockCourses, departments, semesters } from '../lib/mock-data';
 import { Button } from './ui/button';
+import { toast } from 'sonner';
 
 export function CoursesPage() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -20,6 +21,8 @@ export function CoursesPage() {
   const [selectedUnits, setSelectedUnits] = useState<number[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [timeCommitment, setTimeCommitment] = useState([10]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const categories = [
     'Publication',
@@ -32,8 +35,59 @@ export function CoursesPage() {
     'Food'
   ];
 
+  // Fetch courses from API
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/approvedCourses');
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch courses');
+        }
+
+        const result = await response.json();
+        
+        if (result.success && result.courses) {
+          // Transform API data to match Course interface
+          const transformedCourses: Course[] = result.courses.map((course: any) => ({
+            id: course.id,
+            title: course.title,
+            department: course.department,
+            category: course.category,
+            units: course.units,
+            description: course.description,
+            facilitators: [], // Not provided by API
+            facultySponsor: course.faculty_sponsor_name || '',
+            enrolled: 0, // Not provided by API
+            capacity: 0, // Not provided by API
+            status: 'Open' as const, // Default status
+            meetingTimes: '', // Not provided by API
+            location: '', // Not provided by API
+            semester: course.semester,
+            website: course.website,
+            applicationUrl: course.application_url,
+            applicationDue: course.application_due_date,
+            applicationTime: course.time_to_complete,
+          }));
+          
+          setCourses(transformedCourses);
+        }
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+        toast.error('Failed to load courses. Please try again later.');
+        // Fallback to mock data on error
+        setCourses(mockCourses);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, []);
+
   const filteredCourses = useMemo(() => {
-    return mockCourses.filter(course => {
+    return courses.filter(course => {
       // Search query
       if (searchQuery && !course.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
           !course.description.toLowerCase().includes(searchQuery.toLowerCase()) &&
@@ -68,7 +122,7 @@ export function CoursesPage() {
 
       return true;
     });
-  }, [searchQuery, selectedSemester, selectedCategories, selectedDepartments, selectedUnits, selectedStatuses]);
+  }, [courses, searchQuery, selectedSemester, selectedCategories, selectedDepartments, selectedUnits, selectedStatuses]);
 
   const handleViewDetails = (course: Course) => {
     setSelectedCourse(course);
@@ -222,7 +276,11 @@ export function CoursesPage() {
 
           {/* Course Grid */}
           <div className="flex-1">
-            {filteredCourses.length > 0 ? (
+            {isLoading ? (
+              <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+                <p className="text-gray-600">Loading courses...</p>
+              </div>
+            ) : filteredCourses.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredCourses.map(course => (
                   <CourseCard

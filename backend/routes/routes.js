@@ -340,30 +340,4 @@ router.post('/rejectCourse', adminMiddleware, async (req, res) => {
   }
 });
 
-// Check if user is admin
-router.get('/admin/check', authMiddleware, async (req, res) => {
-  try {
-    const user = req.user;
-    
-    if (!user) {
-      return res.status(401).json({ isAdmin: false });
-    }
-
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .single();
-
-    if (error || !profile) {
-      return res.status(200).json({ isAdmin: false });
-    }
-    
-    res.status(200).json({ isAdmin: profile.is_admin || false });
-  } catch (error) {
-    console.error('Error checking admin status:', error);
-    res.status(200).json({ isAdmin: false });
-  }
-});
-
 export default router;

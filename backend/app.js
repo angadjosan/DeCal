@@ -25,6 +25,14 @@ const publicRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+// Rate limiter for public endpoints
+const privateRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Limit each IP to 1000 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 app.use(cors());
 app.use(express.json());
@@ -71,7 +79,33 @@ app.get('/api/approvedCourses', publicRateLimiter, async (req, res) => {
   }
 });
 
-app.use('/api', routes);
+// Public endpoint for check if user is admin
+router.get('/admin/check', async (req, res) => {
+  try {
+    const user = req.user;
+    
+    if (!user) {
+      return res.status(401).json({ isAdmin: false });
+    }
+
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single();
+
+    if (error || !profile) {
+      return res.status(200).json({ isAdmin: false });
+    }
+    
+    res.status(200).json({ isAdmin: profile.is_admin || false });
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    res.status(200).json({ isAdmin: false });
+  }
+});
+
+app.use('/api', privateRateLimiter, routes);
 
 app.use((err, req, res, next) => {
   console.error('Error:', err);
