@@ -22,6 +22,24 @@ const upload = multer({
   }
 });
 
+// Cache for unapproved courses
+let unapprovedCoursesCache = {
+  data: null,
+  timestamp: null,
+  ttl: 5 * 60 * 1000 // 5 minutes in milliseconds (shorter TTL for admin data)
+};
+
+// Helper function to check if cache is valid
+const isCacheValid = (cache) => {
+  return cache.data !== null && cache.timestamp !== null && (Date.now() - cache.timestamp) < cache.ttl;
+};
+
+// Function to clear the unapproved courses cache
+export const clearUnapprovedCoursesCache = () => {
+  unapprovedCoursesCache.data = null;
+  unapprovedCoursesCache.timestamp = null;
+};
+
 // Helper function to get current semester
 function getCurrentSemester() {
   const now = new Date();
@@ -189,6 +207,16 @@ router.post('/submitCourse', authMiddleware, upload.single('cpf_file'), async (r
 
 router.get('/unapprovedCourses', adminMiddleware, async (req, res) => {
   try {
+    // Check if cache is valid
+    if (isCacheValid(unapprovedCoursesCache)) {
+      return res.status(200).json({
+        success: true,
+        courses: unapprovedCoursesCache.data,
+        cached: true
+      });
+    }
+
+    // Cache miss or expired - fetch from database
     const { data: courses, error } = await courseService.getAll('Pending');
 
     if (error) {
@@ -258,9 +286,14 @@ router.get('/unapprovedCourses', adminMiddleware, async (req, res) => {
       created_at: course.created_at
     }));
 
+    // Update cache
+    unapprovedCoursesCache.data = sanitizedCourses;
+    unapprovedCoursesCache.timestamp = Date.now();
+
     res.status(200).json({
       success: true,
-      courses: sanitizedCourses
+      courses: sanitizedCourses,
+      cached: false
     });
   } catch (error) {
     console.error('Error in unapprovedCourses endpoint:', error);
@@ -292,6 +325,9 @@ router.post('/approveCourse', adminMiddleware, async (req, res) => {
       console.error('Error approving course:', error);
       return res.status(500).json({ error: 'Failed to approve course', details: error.message });
     }
+
+    // Clear caches since data has changed
+    clearUnapprovedCoursesCache();
 
     const emails = facilitatorEmails || [course.contact_email];
     if (emails && emails.length > 0) {
@@ -336,6 +372,9 @@ router.post('/rejectCourse', adminMiddleware, async (req, res) => {
       console.error('Error rejecting course:', error);
       return res.status(500).json({ error: 'Failed to reject course', details: error.message });
     }
+
+    // Clear caches since data has changed
+    clearUnapprovedCoursesCache();
 
     const emails = facilitatorEmails || [course.contact_email];
     if (emails && emails.length > 0) {
