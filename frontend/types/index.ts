@@ -1,3 +1,20 @@
+export interface CourseSection {
+  id?: number;
+  course_id?: number;
+  enrollment_status: string;
+  day: string;
+  time: string;
+  room: string;
+  notes?: string;
+}
+
+export interface CourseFacilitator {
+  id?: number;
+  course_id?: number;
+  name: string;
+  email: string;
+}
+
 export interface Course {
   id: string;
   title: string;
@@ -5,20 +22,16 @@ export interface Course {
   category: string;
   units: number;
   description: string;
-  facilitators: string[];
-  facultySponsor: string;
-  enrolled: number;
-  capacity: number;
-  status: 'Open' | 'Waitlist' | 'Closed';
-  meetingTimes: string;
-  location: string;
   semester: string;
+  contact_email: string;
   website?: string;
-  applicationUrl?: string;
-  applicationDue?: string;
-  applicationTime?: number;
-  startDate?: string;
-  endDate?: string;
+  faculty_sponsor_name: string;
+  enrollment_information?: string;
+  application_url?: string;
+  application_due_date?: string;
+  time_to_complete?: number;
+  sections: CourseSection[];
+  facilitators: CourseFacilitator[];
 }
 
 export interface CourseSubmission {

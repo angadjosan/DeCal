@@ -49,29 +49,8 @@ export function CoursesPage() {
         const result = await response.json();
         
         if (result.success && result.courses) {
-          // Transform API data to match Course interface
-          const transformedCourses: Course[] = result.courses.map((course: any) => ({
-            id: course.id,
-            title: course.title,
-            department: course.department,
-            category: course.category,
-            units: course.units,
-            description: course.description,
-            facilitators: [], // Not provided by API
-            facultySponsor: course.faculty_sponsor_name || '',
-            enrolled: 0, // Not provided by API
-            capacity: 0, // Not provided by API
-            status: 'Open' as const, // Default status
-            meetingTimes: '', // Not provided by API
-            location: '', // Not provided by API
-            semester: course.semester,
-            website: course.website,
-            applicationUrl: course.application_url,
-            applicationDue: course.application_due_date,
-            applicationTime: course.time_to_complete,
-          }));
-          
-          setCourses(transformedCourses);
+          // API data already matches Course interface
+          setCourses(result.courses);
         }
       } catch (error) {
         console.error('Error fetching courses:', error);
@@ -89,10 +68,18 @@ export function CoursesPage() {
   const filteredCourses = useMemo(() => {
     return courses.filter(course => {
       // Search query
-      if (searchQuery && !course.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !course.description.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !course.facilitators.some(f => f.toLowerCase().includes(searchQuery.toLowerCase()))) {
-        return false;
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const matchesTitle = course.title.toLowerCase().includes(query);
+        const matchesDescription = course.description.toLowerCase().includes(query);
+        const matchesFacilitator = course.facilitators.some(f => 
+          f.name.toLowerCase().includes(query) || f.email.toLowerCase().includes(query)
+        );
+        const matchesSponsor = course.faculty_sponsor_name?.toLowerCase().includes(query);
+        
+        if (!matchesTitle && !matchesDescription && !matchesFacilitator && !matchesSponsor) {
+          return false;
+        }
       }
 
       // Semester
@@ -115,9 +102,16 @@ export function CoursesPage() {
         return false;
       }
 
-      // Status
-      if (selectedStatuses.length > 0 && !selectedStatuses.includes(course.status)) {
-        return false;
+      // Status - check enrollment status from sections
+      if (selectedStatuses.length > 0) {
+        const hasMatchingStatus = course.sections.some(section => 
+          selectedStatuses.some(status => 
+            section.enrollment_status.toLowerCase().includes(status.toLowerCase())
+          )
+        );
+        if (!hasMatchingStatus && course.sections.length > 0) {
+          return false;
+        }
       }
 
       return true;
