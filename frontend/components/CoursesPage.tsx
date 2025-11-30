@@ -67,17 +67,34 @@ export function CoursesPage() {
 
   const filteredCourses = useMemo(() => {
     return courses.filter(course => {
-      // Search query
+      // Search query - search across all fields
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         const matchesTitle = course.title.toLowerCase().includes(query);
         const matchesDescription = course.description.toLowerCase().includes(query);
+        const matchesDepartment = course.department.toLowerCase().includes(query);
+        const matchesCategory = course.category.toLowerCase().includes(query);
+        const matchesSemester = course.semester.toLowerCase().includes(query);
+        const matchesContactEmail = course.contact_email?.toLowerCase().includes(query);
+        const matchesWebsite = course.website?.toLowerCase().includes(query);
+        const matchesFacilitySponsor = course.faculty_sponsor_name?.toLowerCase().includes(query);
+        const matchesEnrollmentInfo = course.enrollment_information?.toLowerCase().includes(query);
+        const matchesApplicationUrl = course.application_url?.toLowerCase().includes(query);
         const matchesFacilitator = course.facilitators.some(f => 
           f.name.toLowerCase().includes(query) || f.email.toLowerCase().includes(query)
         );
-        const matchesSponsor = course.faculty_sponsor_name?.toLowerCase().includes(query);
+        const matchesSection = course.sections.some(s => 
+          s.enrollment_status.toLowerCase().includes(query) ||
+          s.day.toLowerCase().includes(query) ||
+          s.time.toLowerCase().includes(query) ||
+          s.room.toLowerCase().includes(query) ||
+          s.notes?.toLowerCase().includes(query)
+        );
         
-        if (!matchesTitle && !matchesDescription && !matchesFacilitator && !matchesSponsor) {
+        if (!matchesTitle && !matchesDescription && !matchesDepartment && 
+            !matchesCategory && !matchesSemester && !matchesContactEmail && 
+            !matchesWebsite && !matchesFacilitySponsor && !matchesEnrollmentInfo && 
+            !matchesApplicationUrl && !matchesFacilitator && !matchesSection) {
           return false;
         }
       }
