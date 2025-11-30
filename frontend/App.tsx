@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Navigation } from './components/Navigation';
 import { CoursesPage } from './components/CoursesPage';
 import { SubmissionForm } from './components/SubmissionForm';
@@ -9,12 +9,24 @@ import { Toaster } from './components/ui/sonner';
 import { UserRole } from './types';
 import { createClient, Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
+import { toast } from 'sonner';
 
 const supabaseUrl =
   import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey =
   import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Protected Route Component that shows toast when redirecting
+function ProtectedRoute({ isLoggedIn, children }: { isLoggedIn: boolean; children: React.ReactNode }) {
+  if (!isLoggedIn) {
+    toast.error('Please log in to submit a DeCal', {
+      duration: 4000,
+    });
+    return <Navigate to="/courses" replace />;
+  }
+  return <>{children}</>;
+}
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -71,7 +83,11 @@ export default function App() {
       <Routes>
         <Route path="/" element={<CoursesPage />} />
         <Route path="/courses" element={<CoursesPage />} /> 
-        <Route path="/submit" element={isLoggedIn ? <SubmissionForm session={session} /> : <Navigate to="/courses" replace />} />
+        <Route path="/submit" element={
+          <ProtectedRoute isLoggedIn={isLoggedIn}>
+            <SubmissionForm session={session} />
+          </ProtectedRoute>
+        } />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/about" element={<StaticPages page="about" />} />
         <Route path="/faq" element={<StaticPages page="faq" />} />
