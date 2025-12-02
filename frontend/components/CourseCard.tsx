@@ -24,12 +24,31 @@ export function CourseCard({ course }: CourseCardProps) {
     return colors[category] || 'bg-gray-100 text-gray-700';
   };
 
+  const getEnrollmentStatusColor = (status: string) => {
+    const lowerStatus = status.toLowerCase();
+    if (lowerStatus.includes('open')) {
+      return 'bg-green-500 hover:bg-green-600 text-white';
+    } else if (lowerStatus.includes('waitlist')) {
+      return 'bg-yellow-500 hover:bg-yellow-600 text-white';
+    } else {
+      return 'bg-red-500 hover:bg-red-600 text-white';
+    }
+  };
+
+  // Get first section's enrollment status
+  const firstSection = course.sections?.[0];
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
-      <div className="mb-2">
+      <div className="mb-2 flex items-start justify-between gap-2">
         <Badge className={getCategoryColor(course.category)}>
           {course.category}
         </Badge>
+        {firstSection?.enrollment_status && (
+          <Badge className={getEnrollmentStatusColor(firstSection.enrollment_status)}>
+            {firstSection.enrollment_status}
+          </Badge>
+        )}
       </div>
 
       <h3 className="text-[#003262] text-lg mb-1">{course.title}</h3>
