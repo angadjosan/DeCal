@@ -432,13 +432,6 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                   </div>
                 </div>
               </div>
-
-              {/* Stats Summary */}
-              <div className="pt-4 border-t border-gray-200">
-                <p className="text-sm text-gray-600 mb-2">Total Submissions</p>
-                <p className="text-2xl font-bold text-[#003262]">{submissions.length}</p>
-                <p className="text-xs text-gray-500 mt-1">Showing {filteredAndSortedSubmissions.length} results</p>
-              </div>
             </div>
           </div>
 
