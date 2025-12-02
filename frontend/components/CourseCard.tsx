@@ -1,4 +1,4 @@
-import { Users, Calendar, MapPin } from 'lucide-react';
+import { Calendar, MapPin } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Course } from '../types';
@@ -24,63 +24,74 @@ export function CourseCard({ course, onViewDetails }: CourseCardProps) {
     return colors[category] || 'bg-gray-100 text-gray-700';
   };
 
-  const getStatusColor = (status: string) => {
-    if (status.toLowerCase().includes('open')) return 'bg-green-100 text-green-700';
-    if (status.toLowerCase().includes('waitlist')) return 'bg-yellow-100 text-yellow-700';
-    if (status.toLowerCase().includes('closed')) return 'bg-red-100 text-red-700';
-    return 'bg-gray-100 text-gray-700';
-  };
-
-  // Get primary section for display
-  const primarySection = course.sections[0];
-  const sectionCount = course.sections.length;
-  const facilitatorCount = course.facilitators.length;
-
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
-      <div className="mb-4">
+    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
+      <div className="mb-2">
         <Badge className={getCategoryColor(course.category)}>
           {course.category}
         </Badge>
       </div>
 
-      <h3 className="text-[#003262] mb-2">{course.title}</h3>
-      <p className="text-gray-600 mb-4">
+      <h3 className="text-[#003262] text-lg mb-1">{course.title}</h3>
+      <p className="text-gray-600 text-sm mb-3">
         {course.department} • {course.units} {course.units === 1 ? 'unit' : 'units'}
       </p>
 
-      <div className="space-y-2 mb-4">
-        {primarySection && (
-          <>
-            <div className="flex items-center gap-2 text-gray-700">
-              <Calendar className="h-4 w-4" />
-              <span className="text-sm">{primarySection.day} {primarySection.time}</span>
-              {sectionCount > 1 && (
-                <Badge className="bg-gray-100 text-gray-700">+{sectionCount - 1} more</Badge>
-              )}
+      <div className="mb-3">
+        <div className="flex items-start gap-3 flex-wrap">
+          {/* Sections */}
+          {course.sections.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+              <div className="flex flex-wrap gap-1">
+                {course.sections.slice(0, 3).map((section, index) => (
+                  <Badge 
+                    key={index} 
+                    variant="outline" 
+                    className="text-xs font-normal bg-gray-50 text-gray-700 border-gray-200"
+                  >
+                    {section.day} {section.time}
+                  </Badge>
+                ))}
+                {course.sections.length > 3 && (
+                  <Badge 
+                    variant="outline" 
+                    className="text-xs font-normal bg-gray-100 text-gray-600 border-gray-300"
+                  >
+                    +{course.sections.length - 3} more
+                  </Badge>
+                )}
+              </div>
             </div>
+          )}
 
-            <div className="flex items-center gap-2 text-gray-700">
-              <MapPin className="h-4 w-4" />
-              <span className="text-sm">{primarySection.room}</span>
+          {/* Locations */}
+          {course.sections.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
+              <div className="flex flex-wrap gap-1">
+                {[...new Set(course.sections.map(s => s.room))].slice(0, 3).map((room, index) => (
+                  <Badge 
+                    key={index} 
+                    variant="outline" 
+                    className="text-xs font-normal bg-gray-50 text-gray-700 border-gray-200"
+                  >
+                    {room}
+                  </Badge>
+                ))}
+                {new Set(course.sections.map(s => s.room)).size > 3 && (
+                  <Badge 
+                    variant="outline" 
+                    className="text-xs font-normal bg-gray-100 text-gray-600 border-gray-300"
+                  >
+                    +{new Set(course.sections.map(s => s.room)).size - 3} more
+                  </Badge>
+                )}
+              </div>
             </div>
-
-            <div className="flex items-center gap-2 text-gray-700">
-              <Users className="h-4 w-4" />
-              <Badge className={getStatusColor(primarySection.enrollment_status)}>
-                {primarySection.enrollment_status}
-              </Badge>
-            </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
-
-      {facilitatorCount > 0 && (
-        <p className="text-gray-600 mb-4 text-sm">
-          {course.facilitators.slice(0, 2).map(f => f.name).join(', ')}
-          {facilitatorCount > 2 && ` +${facilitatorCount - 2} more`}
-        </p>
-      )}
 
       <Button
         onClick={() => onViewDetails(course)}
