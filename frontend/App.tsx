@@ -33,7 +33,7 @@ function ProtectedRoute({ isLoggedIn, children }: { isLoggedIn: boolean; childre
 // Admin Protected Route Component
 function AdminProtectedRoute({ userRole, children }: { userRole: UserRole; children: React.ReactNode }) {
   if (userRole !== 'admin') {
-    return <NotFound />;
+    return <Navigate to="/courses" replace />;
   }
   return <>{children}</>;
 }
@@ -137,7 +137,7 @@ export default function App() {
         } />
         <Route path="/admin" element={
           <AdminProtectedRoute userRole={userRole}>
-            <AdminDashboard />
+            <AdminDashboard session={session} />
           </AdminProtectedRoute>
         } />
         <Route path="/about" element={<StaticPages page="about" />} />

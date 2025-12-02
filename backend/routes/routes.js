@@ -238,7 +238,7 @@ router.post('/submitCourse', authMiddleware, upload.single('cpf_file'), async (r
   }
 });
 
-router.get('/unapprovedCourses', adminMiddleware, async (req, res) => {
+router.get('/unapprovedCourses', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     // Check if cache is valid
     if (isCacheValid(unapprovedCoursesCache)) {
@@ -334,7 +334,7 @@ router.get('/unapprovedCourses', adminMiddleware, async (req, res) => {
   }
 });
 
-router.post('/approveCourse', adminMiddleware, async (req, res) => {
+router.post('/approveCourse', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { id, facilitatorEmails } = req.body;
 
@@ -381,7 +381,7 @@ router.post('/approveCourse', adminMiddleware, async (req, res) => {
   }
 });
 
-router.post('/rejectCourse', adminMiddleware, async (req, res) => {
+router.post('/rejectCourse', authMiddleware, adminMiddleware, async (req, res) => {
   try {
     const { id, feedback, facilitatorEmails } = req.body;
 
