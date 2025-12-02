@@ -29,6 +29,17 @@ function ProtectedRoute({ isLoggedIn, children }: { isLoggedIn: boolean; childre
   return <>{children}</>;
 }
 
+// Admin Protected Route Component
+function AdminProtectedRoute({ userRole, children }: { userRole: UserRole; children: React.ReactNode }) {
+  if (userRole !== 'admin') {
+    toast.error('Access denied. Admin privileges required.', {
+      duration: 4000,
+    });
+    return <Navigate to="/courses" replace />;
+  }
+  return <>{children}</>;
+}
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<UserRole>("student");
@@ -126,7 +137,11 @@ export default function App() {
             <SubmissionForm session={session} />
           </ProtectedRoute>
         } />
-        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin" element={
+          <AdminProtectedRoute userRole={userRole}>
+            <AdminDashboard />
+          </AdminProtectedRoute>
+        } />
         <Route path="/about" element={<StaticPages page="about" />} />
         <Route path="/faq" element={<StaticPages page="faq" />} />
         <Route path="/facilitate" element={<StaticPages page="facilitate" />} />
