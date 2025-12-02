@@ -1,10 +1,15 @@
 export interface CourseSection {
   id?: number;
   course_id?: number;
+  section_type: string;
   enrollment_status: string;
   day: string;
   time: string;
   room: string;
+  capacity?: number;
+  start_date?: string;
+  ccn_ld?: string;
+  ccn_ud?: string;
   notes?: string;
 }
 

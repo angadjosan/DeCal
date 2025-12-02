@@ -181,6 +181,19 @@ export function CourseDetailsPage() {
               <div key={index} className="p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
+                    {/* Section Type & Capacity */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <Badge variant="outline" className="font-medium">
+                        {section.section_type}
+                      </Badge>
+                      {section.capacity && (
+                        <span className="text-sm text-gray-600">
+                          Capacity: {section.capacity}
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Time & Location */}
                     <p className="text-gray-900 font-medium mb-1">
                       {section.day} at {section.time}
                     </p>
@@ -188,6 +201,34 @@ export function CourseDetailsPage() {
                       <MapPin className="h-4 w-4" />
                       <p className="text-sm">{section.room}</p>
                     </div>
+                    
+                    {/* Start Date */}
+                    {section.start_date && (
+                      <p className="text-sm text-gray-600 mt-2">
+                        <strong>Starts:</strong> {new Date(section.start_date).toLocaleDateString('en-US', { 
+                          month: 'long', 
+                          day: 'numeric', 
+                          year: 'numeric' 
+                        })}
+                      </p>
+                    )}
+                    
+                    {/* CCN Numbers */}
+                    {(section.ccn_ld || section.ccn_ud) && (
+                      <div className="flex gap-4 mt-2 text-sm">
+                        {section.ccn_ld && (
+                          <span className="text-gray-700">
+                            <strong>CCN (LD):</strong> {section.ccn_ld}
+                          </span>
+                        )}
+                        {section.ccn_ud && (
+                          <span className="text-gray-700">
+                            <strong>CCN (UD):</strong> {section.ccn_ud}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    
                     {section.notes && (
                       <p className="text-gray-600 text-sm mt-2">{section.notes}</p>
                     )}

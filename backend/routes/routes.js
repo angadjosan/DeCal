@@ -137,10 +137,15 @@ router.post('/submitCourse', authMiddleware, upload.single('cpf_file'), async (r
     if (sections && sections.length > 0) {
       const sectionsToInsert = sections.map(section => ({
         course_id: data.id,
+        section_type: section.section_type || 'Lecture',
         enrollment_status: section.enrollment_status,
         day: section.day,
         time: section.time,
         room: section.room,
+        capacity: section.capacity || null,
+        start_date: section.start_date || null,
+        ccn_ld: section.ccn_ld || null,
+        ccn_ud: section.ccn_ud || null,
         notes: section.notes || null
       }));
 
