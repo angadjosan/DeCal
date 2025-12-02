@@ -6,6 +6,7 @@ import { SubmissionForm } from './components/SubmissionForm';
 import { AdminDashboard } from './components/AdminDashboard';
 import { LoginPage } from './components/LoginPage';
 import { StaticPages } from './components/StaticPages';
+import { NotFound } from './components/NotFound';
 import { Toaster } from './components/ui/sonner';
 import { UserRole } from './types';
 import { createClient, Session } from "@supabase/supabase-js";
@@ -32,10 +33,7 @@ function ProtectedRoute({ isLoggedIn, children }: { isLoggedIn: boolean; childre
 // Admin Protected Route Component
 function AdminProtectedRoute({ userRole, children }: { userRole: UserRole; children: React.ReactNode }) {
   if (userRole !== 'admin') {
-    toast.error('Access denied. Admin privileges required.', {
-      duration: 4000,
-    });
-    return <Navigate to="/courses" replace />;
+    return <NotFound />;
   }
   return <>{children}</>;
 }
@@ -145,6 +143,7 @@ export default function App() {
         <Route path="/about" element={<StaticPages page="about" />} />
         <Route path="/faq" element={<StaticPages page="faq" />} />
         <Route path="/facilitate" element={<StaticPages page="facilitate" />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />
     </div>
