@@ -25,6 +25,8 @@ function ProtectedRoute({ isLoggedIn, children }: { isLoggedIn: boolean; childre
     toast.error('Please log in to submit a DeCal', {
       duration: 4000,
     });
+    // Store the intended destination before redirecting
+    sessionStorage.setItem('redirectAfterLogin', window.location.pathname);
     return <Navigate to="/courses" replace />;
   }
   return <>{children}</>;
@@ -95,10 +97,12 @@ export default function App() {
 
   // Google login (called from navigation if needed)
   const handleGoogleLogin = async () => {
+    // Get the intended redirect URL or use current path
+    const redirectPath = sessionStorage.getItem('redirectAfterLogin') || window.location.pathname;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/courses`,
+        redirectTo: `${window.location.origin}${redirectPath}`,
         queryParams: {
           access_type: "offline",
           prompt: "consent"
@@ -108,6 +112,9 @@ export default function App() {
 
     if (error) {
       console.error("Google login failed:", error.message);
+    } else {
+      // Clear the stored redirect after successful login initiation
+      sessionStorage.removeItem('redirectAfterLogin');
     }
   };
 
