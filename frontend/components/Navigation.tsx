@@ -81,6 +81,17 @@ export function Navigation({ isLoggedIn = false, userRole, handleGoogleLogin, ha
             </DropdownMenuContent>
           </DropdownMenu>
 
+          {/* Admin Dashboard Link - Only visible to admins */}
+          {userRole === 'admin' && (
+            <Link
+              to="/admin"
+              className={`text-white/80 hover:text-white transition-colors ${
+                location.pathname === '/admin' ? 'text-white' : ''
+              }`}
+            >
+              Admin Dashboard
+            </Link>
+          )}
           
         </div>
 
@@ -170,18 +181,20 @@ export function Navigation({ isLoggedIn = false, userRole, handleGoogleLogin, ha
                   ))}
                 </div>
 
-                {/* Admin Dashboard in Mobile */}
-                <div className="border-t border-gray-200 pt-4 mt-2">
-                  <Link
-                    to="/admin"
-                    onClick={handleMobileMenuClose}
-                    className={`text-left p-2 rounded-lg hover:bg-gray-100 w-full block ${
-                      location.pathname === '/admin' ? 'bg-gray-100 text-[#003262]' : 'text-gray-700'
-                    }`}
-                  >
-                    Admin Dashboard (TEMPORARY)
-                  </Link>
-                </div>
+                {/* Admin Dashboard in Mobile - Only visible to admins */}
+                {userRole === 'admin' && (
+                  <div className="border-t border-gray-200 pt-4 mt-2">
+                    <Link
+                      to="/admin"
+                      onClick={handleMobileMenuClose}
+                      className={`text-left p-2 rounded-lg hover:bg-gray-100 w-full block ${
+                        location.pathname === '/admin' ? 'bg-gray-100 text-[#003262]' : 'text-gray-700'
+                      }`}
+                    >
+                      Admin Dashboard
+                    </Link>
+                  </div>
+                )}
               </div>
             </SheetContent>
           </Sheet>

@@ -48,6 +48,42 @@ export default function App() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
+  // Fetch user profile when session changes
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!session) {
+        setUserRole("student");
+        return;
+      }
+
+      try {
+        const { data: { session: currentSession } } = await supabase.auth.getSession();
+        if (!currentSession) {
+          setUserRole("student");
+          return;
+        }
+
+        const response = await fetch('/api/profile', {
+          headers: {
+            'Authorization': `Bearer ${currentSession.access_token}`
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUserRole(data.profile.is_admin ? "admin" : "student");
+        } else {
+          setUserRole("student");
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+        setUserRole("student");
+      }
+    };
+
+    fetchUserProfile();
+  }, [session]);
+
   // Google login (called from navigation if needed)
   const handleGoogleLogin = async () => {
     const { error } = await supabase.auth.signInWithOAuth({

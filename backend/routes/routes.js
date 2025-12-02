@@ -55,6 +55,34 @@ function getCurrentSemester() {
   }
 }
 
+// Get user profile (including admin status)
+router.get('/profile', authMiddleware, async (req, res) => {
+  try {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', req.user.id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching profile:', error);
+      return res.status(500).json({ error: 'Failed to fetch profile', details: error.message });
+    }
+
+    res.status(200).json({
+      success: true,
+      profile: {
+        id: req.user.id,
+        email: req.user.email,
+        is_admin: profile?.is_admin || false
+      }
+    });
+  } catch (error) {
+    console.error('Error in profile endpoint:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
 router.post('/submitCourse', authMiddleware, upload.single('cpf_file'), async (req, res) => {
   try {
     // Parse the JSON data from the form
