@@ -146,6 +146,36 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
     ));
   };
 
+  // Normalize URL to include https:// if not present
+  const normalizeUrl = (url: string): string => {
+    if (!url) return '';
+    const trimmed = url.trim();
+    if (!trimmed) return '';
+    
+    // If it already has a protocol, return as-is
+    if (/^https?:\/\//i.test(trimmed)) {
+      return trimmed;
+    }
+    
+    // Add https:// prefix
+    return `https://${trimmed}`;
+  };
+
+  // Validate URL format
+  const isValidUrl = (url: string): boolean => {
+    if (!url) return true; // Empty URLs are allowed (optional fields)
+    
+    const normalized = normalizeUrl(url);
+    
+    try {
+      const urlObj = new URL(normalized);
+      // Check if it has a valid domain pattern
+      return /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*(\.[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*)+$/.test(urlObj.hostname);
+    } catch {
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -227,6 +257,17 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
       }
     }
 
+    // Validate URLs if provided
+    if (formData.website && !isValidUrl(formData.website)) {
+      toast.error("Please enter a valid website URL (e.g., website.com or https://website.com)");
+      return;
+    }
+
+    if (formData.application_url && !isValidUrl(formData.application_url)) {
+      toast.error("Please enter a valid application URL (e.g., website.com or https://website.com)");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -244,12 +285,12 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
         category: formData.category,
         units: parseInt(formData.units, 10),
         contact_email: formData.contact_email,
-        website: formData.website || null,
+        website: formData.website ? normalizeUrl(formData.website) : null,
         description: formData.description,
         faculty_sponsor_name: formData.faculty_sponsor_name,
         faculty_sponsor_email: formData.faculty_sponsor_email,
         enrollment_information: formData.enrollment_information || null,
-        application_url: formData.application_url || null,
+        application_url: formData.application_url ? normalizeUrl(formData.application_url) : null,
         application_due_date: formData.application_due_date 
           ? new Date(formData.application_due_date).toISOString() 
           : null,
@@ -780,12 +821,12 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
                 <Label htmlFor="website">Course Website</Label>
                 <Input
                   id="website"
-                  type="url"
+                  type="text"
                   value={formData.website}
                   onChange={(e) =>
                     handleChange("website", e.target.value)
                   }
-                  placeholder="https://"
+                  placeholder="example.com or https://example.com"
                 />
               </div>
 
@@ -814,7 +855,7 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
                 </Label>
                 <Input
                   id="application_url"
-                  type="url"
+                  type="text"
                   value={formData.application_url}
                   onChange={(e) =>
                     handleChange(
@@ -822,7 +863,7 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
                       e.target.value,
                     )
                   }
-                  placeholder="https://"
+                  placeholder="example.com or https://example.com"
                 />
               </div>
 
