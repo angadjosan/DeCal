@@ -250,7 +250,9 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <div className="max-w-[1440px] mx-auto px-6 py-12">
-        <h1 className="text-[#003262] mb-8">Admin Dashboard</h1>
+        <div className="mb-8 text-center">
+          <h1 className="text-[#003262] mb-2">Admin Dashboard</h1>
+        </div>
 
         {/* Submissions Table */}
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
