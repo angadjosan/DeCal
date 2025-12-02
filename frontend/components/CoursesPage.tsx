@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { CourseCard } from './CourseCard';
-import { CourseDetailModal } from './CourseDetailModal';
 import { Input } from './ui/input';
 import { Checkbox } from './ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -12,8 +11,6 @@ import { Button } from './ui/button';
 import { toast } from 'sonner';
 
 export function CoursesPage() {
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSemester, setSelectedSemester] = useState('Fall 2025');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -134,11 +131,6 @@ export function CoursesPage() {
       return true;
     });
   }, [courses, searchQuery, selectedSemester, selectedCategories, selectedDepartments, selectedUnits, selectedStatuses]);
-
-  const handleViewDetails = (course: Course) => {
-    setSelectedCourse(course);
-    setIsModalOpen(true);
-  };
 
   const toggleCategory = (category: string) => {
     setSelectedCategories(prev =>
@@ -297,7 +289,6 @@ export function CoursesPage() {
                   <CourseCard
                     key={course.id}
                     course={course}
-                    onViewDetails={handleViewDetails}
                   />
                 ))}
               </div>
@@ -312,13 +303,6 @@ export function CoursesPage() {
           </div>
         </div>
       </div>
-
-      {/* Course Detail Modal */}
-      <CourseDetailModal
-        course={selectedCourse}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-      />
     </div>
   );
 }

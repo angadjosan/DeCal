@@ -136,6 +136,76 @@ app.get('/api/approvedCourses', publicRateLimiter, async (req, res) => {
   }
 });
 
+// Public endpoint for single course by ID
+app.get('/api/courses/:id', publicRateLimiter, async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Validate ID format (UUID)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      return res.status(400).json({ error: 'Invalid course ID format' });
+    }
+
+    // Fetch course by ID
+    const { data: course, error } = await courseService.getById(id);
+
+    if (error) {
+      console.error('Error fetching course:', error);
+      return res.status(500).json({ error: 'Failed to fetch course', details: error.message });
+    }
+
+    if (!course) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+
+    // Only return Active courses
+    if (course.status !== 'Active') {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+
+    // Fetch sections for this course
+    const { data: sections } = await supabase
+      .from('course_sections')
+      .select('*')
+      .eq('course_id', course.id);
+
+    // Fetch facilitators for this course
+    const { data: facilitators } = await supabase
+      .from('course_facilitators')
+      .select('*')
+      .eq('course_id', course.id);
+
+    // Sanitize response - only return public fields
+    const sanitizedCourse = {
+      id: course.id,
+      semester: course.semester,
+      title: course.title,
+      department: course.department,
+      category: course.category,
+      units: course.units,
+      contact_email: course.contact_email,
+      website: course.website,
+      description: course.description,
+      faculty_sponsor_name: course.faculty_sponsor_name,
+      enrollment_information: course.enrollment_information,
+      application_url: course.application_url,
+      application_due_date: course.application_due_date,
+      time_to_complete: course.time_to_complete,
+      sections: sections || [],
+      facilitators: facilitators || []
+    };
+
+    res.status(200).json({
+      success: true,
+      course: sanitizedCourse
+    });
+  } catch (error) {
+    console.error('Error in course details endpoint:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
 // Public endpoint for check if user is admin
 app.get('/admin/check', async (req, res) => {
   try {
