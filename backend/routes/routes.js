@@ -249,8 +249,8 @@ router.get('/unapprovedCourses', authMiddleware, adminMiddleware, async (req, re
       });
     }
 
-    // Cache miss or expired - fetch from database
-    const { data: courses, error } = await courseService.getAll('Pending');
+    // Cache miss or expired - fetch from database (fetch all courses for admin dashboard)
+    const { data: courses, error } = await courseService.getAll();
 
     if (error) {
       console.error('Error fetching unapproved courses:', error);

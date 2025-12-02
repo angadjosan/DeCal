@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
@@ -6,7 +6,9 @@ import { Dialog, DialogContent } from './ui/dialog';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { CheckCircle2, XCircle, AlertCircle, Eye, Loader2 } from 'lucide-react';
+import { Input } from './ui/input';
+import { Checkbox } from './ui/checkbox';
+import { CheckCircle2, XCircle, AlertCircle, Eye, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
@@ -65,14 +67,25 @@ interface AdminDashboardProps {
   session: Session | null;
 }
 
+type SortField = 'title' | 'department' | 'semester' | 'contact_email' | 'status' | 'created_at';
+type SortDirection = 'asc' | 'desc' | null;
+
 export function AdminDashboard({ session }: AdminDashboardProps) {
   const [submissions, setSubmissions] = useState<UnapprovedCourse[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<'all' | 'Pending' | 'Active' | 'Rejected'>('all');
   const [selectedSubmission, setSelectedSubmission] = useState<UnapprovedCourse | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  
+  // Filter and search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSemester, setSelectedSemester] = useState<string>('all');
+  const [statusFilters, setStatusFilters] = useState<Set<string>>(new Set(['Pending', 'Active', 'Rejected']));
+  
+  // Sorting state
+  const [sortField, setSortField] = useState<SortField>('created_at');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   // Fetch submissions from the backend
   useEffect(() => {
@@ -116,10 +129,101 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
     fetchSubmissions();
   }, [session]);
 
-  const filteredSubmissions = submissions.filter(sub => {
-    if (filter === 'all') return true;
-    return sub.status === filter;
-  });
+  // Get unique semesters from submissions
+  const availableSemesters = useMemo(() => {
+    const semesters = new Set(submissions.map(s => s.semester));
+    return Array.from(semesters).sort();
+  }, [submissions]);
+
+  // Toggle status filter
+  const toggleStatusFilter = (status: string) => {
+    const newFilters = new Set(statusFilters);
+    if (newFilters.has(status)) {
+      newFilters.delete(status);
+    } else {
+      newFilters.add(status);
+    }
+    setStatusFilters(newFilters);
+  };
+
+  // Handle column sort
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Cycle through: asc -> desc -> null -> asc
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else if (sortDirection === 'desc') {
+        setSortDirection(null);
+        setSortField('created_at');
+      }
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Get sort icon
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ArrowUpDown className="h-4 w-4 ml-1 opacity-40" />;
+    }
+    if (sortDirection === 'asc') {
+      return <ArrowUp className="h-4 w-4 ml-1" />;
+    }
+    if (sortDirection === 'desc') {
+      return <ArrowDown className="h-4 w-4 ml-1" />;
+    }
+    return <ArrowUpDown className="h-4 w-4 ml-1 opacity-40" />;
+  };
+
+  // Apply filters and sorting
+  const filteredAndSortedSubmissions = useMemo(() => {
+    let filtered = submissions.filter(sub => {
+      // Status filter
+      if (!statusFilters.has(sub.status)) return false;
+      
+      // Semester filter
+      if (selectedSemester !== 'all' && sub.semester !== selectedSemester) return false;
+      
+      // Search filter (search in title, department, contact_email)
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const matchesSearch = 
+          sub.title.toLowerCase().includes(query) ||
+          sub.department.toLowerCase().includes(query) ||
+          sub.contact_email.toLowerCase().includes(query);
+        if (!matchesSearch) return false;
+      }
+      
+      return true;
+    });
+
+    // Apply sorting
+    if (sortDirection) {
+      filtered = [...filtered].sort((a, b) => {
+        let aValue: any = a[sortField];
+        let bValue: any = b[sortField];
+
+        // Handle dates
+        if (sortField === 'created_at') {
+          aValue = new Date(aValue).getTime();
+          bValue = new Date(bValue).getTime();
+        }
+
+        // Handle strings
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          aValue = aValue.toLowerCase();
+          bValue = bValue.toLowerCase();
+        }
+
+        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [submissions, statusFilters, selectedSemester, searchQuery, sortField, sortDirection]);
 
   const stats = {
     pending: submissions.filter(s => s.status === 'Pending').length,
@@ -249,57 +353,180 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      <div className="max-w-[1440px] mx-auto px-6 py-12">
+      <div className="max-w-[1800px] mx-auto px-6 py-12">
         <div className="mb-8 text-center">
           <h1 className="text-[#003262] mb-2">Admin Dashboard</h1>
         </div>
 
-        {/* Submissions Table */}
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          {filteredSubmissions.length === 0 ? (
-            <div className="p-12 text-center">
-              <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No submissions found</h3>
-              <p className="text-gray-600">
-                {filter === 'all' 
-                  ? 'There are no course submissions at this time.' 
-                  : `There are no ${filter.toLowerCase()} submissions.`}
-              </p>
+        <div className="flex gap-6">
+          {/* Left Sidebar - Filters */}
+          <div className="w-80 flex-shrink-0">
+            <div className="bg-white border border-gray-200 rounded-lg p-6 sticky top-24">
+              <h2 className="text-lg font-semibold text-[#003262] mb-4">Filters</h2>
+              
+              {/* Search */}
+              <div className="mb-6">
+                <Label htmlFor="search" className="text-sm font-medium mb-2 block">Search</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="search"
+                    type="text"
+                    placeholder="Search by name..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+
+              {/* Semester Filter */}
+              <div className="mb-6">
+                <Label htmlFor="semester" className="text-sm font-medium mb-2 block">Semester</Label>
+                <Select value={selectedSemester} onValueChange={setSelectedSemester}>
+                  <SelectTrigger id="semester">
+                    <SelectValue placeholder="Select semester" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Semesters</SelectItem>
+                    {availableSemesters.map(semester => (
+                      <SelectItem key={semester} value={semester}>{semester}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Status Filter */}
+              <div className="mb-6">
+                <Label className="text-sm font-medium mb-3 block">Status</Label>
+                <div className="space-y-3">
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="status-pending"
+                      checked={statusFilters.has('Pending')}
+                      onCheckedChange={() => toggleStatusFilter('Pending')}
+                    />
+                    <label htmlFor="status-pending" className="ml-2 text-sm text-gray-700 cursor-pointer">
+                      Pending ({submissions.filter(s => s.status === 'Pending').length})
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="status-approved"
+                      checked={statusFilters.has('Active')}
+                      onCheckedChange={() => toggleStatusFilter('Active')}
+                    />
+                    <label htmlFor="status-approved" className="ml-2 text-sm text-gray-700 cursor-pointer">
+                      Approved ({submissions.filter(s => s.status === 'Active').length})
+                    </label>
+                  </div>
+                  <div className="flex items-center">
+                    <Checkbox
+                      id="status-rejected"
+                      checked={statusFilters.has('Rejected')}
+                      onCheckedChange={() => toggleStatusFilter('Rejected')}
+                    />
+                    <label htmlFor="status-rejected" className="ml-2 text-sm text-gray-700 cursor-pointer">
+                      Rejected ({submissions.filter(s => s.status === 'Rejected').length})
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats Summary */}
+              <div className="pt-4 border-t border-gray-200">
+                <p className="text-sm text-gray-600 mb-2">Total Submissions</p>
+                <p className="text-2xl font-bold text-[#003262]">{submissions.length}</p>
+                <p className="text-xs text-gray-500 mt-1">Showing {filteredAndSortedSubmissions.length} results</p>
+              </div>
             </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Title</TableHead>
-                  <TableHead>Dept</TableHead>
-                  <TableHead>Semester</TableHead>
-                  <TableHead>Contact</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSubmissions.map((submission) => (
-                  <TableRow key={submission.id}>
-                    <TableCell>{submission.title}</TableCell>
-                    <TableCell>{submission.department}</TableCell>
-                    <TableCell>{submission.semester}</TableCell>
-                    <TableCell>{submission.contact_email}</TableCell>
-                    <TableCell>{getStatusBadge(submission.status)}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleReview(submission)}
-                      >
-                        {submission.status === 'Pending' ? 'Review' : 'View'}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          </div>
+
+          {/* Main Content - Table */}
+          <div className="flex-1 min-w-0">
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              {filteredAndSortedSubmissions.length === 0 ? (
+                <div className="p-12 text-center">
+                  <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No submissions found</h3>
+                  <p className="text-gray-600">
+                    {searchQuery || selectedSemester !== 'all' || statusFilters.size < 3
+                      ? 'No courses match your current filters. Try adjusting your search criteria.' 
+                      : 'There are no course submissions at this time.'}
+                  </p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>
+                        <button
+                          onClick={() => handleSort('title')}
+                          className="flex items-center hover:text-[#003262] font-semibold"
+                        >
+                          Title
+                          {getSortIcon('title')}
+                        </button>
+                      </TableHead>
+                      <TableHead>
+                        <button
+                          onClick={() => handleSort('semester')}
+                          className="flex items-center hover:text-[#003262] font-semibold"
+                        >
+                          Semester
+                          {getSortIcon('semester')}
+                        </button>
+                      </TableHead>
+                      <TableHead>
+                        <button
+                          onClick={() => handleSort('status')}
+                          className="flex items-center hover:text-[#003262] font-semibold"
+                        >
+                          Status
+                          {getSortIcon('status')}
+                        </button>
+                      </TableHead>
+                      <TableHead>
+                        <button
+                          onClick={() => handleSort('created_at')}
+                          className="flex items-center hover:text-[#003262] font-semibold"
+                        >
+                          Date Posted
+                          {getSortIcon('created_at')}
+                        </button>
+                      </TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredAndSortedSubmissions.map((submission) => (
+                      <TableRow key={submission.id}>
+                        <TableCell className="font-medium">{submission.title}</TableCell>
+                        <TableCell>{submission.semester}</TableCell>
+                        <TableCell>{getStatusBadge(submission.status)}</TableCell>
+                        <TableCell className="text-gray-600">
+                          {new Date(submission.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleReview(submission)}
+                          >
+                            {submission.status === 'Pending' ? 'Review' : 'View'}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Review Modal */}

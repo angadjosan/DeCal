@@ -89,7 +89,7 @@ export function Navigation({ isLoggedIn = false, userRole, handleGoogleLogin, ha
                 location.pathname === '/admin' ? 'text-white' : ''
               }`}
             >
-              Admin Dashboard
+              Admin
             </Link>
           )}
           
