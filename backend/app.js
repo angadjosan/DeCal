@@ -42,7 +42,7 @@ app.use(express.urlencoded({ extended: true }));
 let approvedCoursesCache = {
   data: null,
   timestamp: null,
-  ttl: 10 * 60 * 1000 // 10 minutes in milliseconds
+  ttl: 1 * 60 * 1000 // 1 minute in milliseconds
 };
 
 // Helper function to check if cache is valid

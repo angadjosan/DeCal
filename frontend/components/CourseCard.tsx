@@ -12,16 +12,16 @@ export function CourseCard({ course }: CourseCardProps) {
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
-      'Publication': 'bg-purple-100 text-purple-700',
-      'Health': 'bg-green-100 text-green-700',
-      'Environment': 'bg-emerald-100 text-emerald-700',
-      'Cultural': 'bg-pink-100 text-pink-700',
-      'Political/Social': 'bg-blue-100 text-blue-700',
-      'Media': 'bg-orange-100 text-orange-700',
-      'Professional/Business': 'bg-indigo-100 text-indigo-700',
-      'Food': 'bg-yellow-100 text-yellow-700',
+      'Publication': 'bg-purple-100 text-purple-700 border-purple-200',
+      'Health': 'bg-green-100 text-green-700 border-green-200',
+      'Environment': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      'Cultural': 'bg-pink-100 text-pink-700 border-pink-200',
+      'Political/Social': 'bg-blue-100 text-blue-700 border-blue-200',
+      'Media': 'bg-orange-100 text-orange-700 border-orange-200',
+      'Professional/Business': 'bg-slate-100 text-slate-700 border-slate-200',
+      'Food': 'bg-yellow-100 text-yellow-700 border-yellow-200',
     };
-    return colors[category] || 'bg-gray-100 text-gray-700';
+    return colors[category] || 'bg-gray-100 text-gray-700 border-gray-200';
   };
 
   const getEnrollmentStatusColor = (status: string) => {
@@ -41,7 +41,7 @@ export function CourseCard({ course }: CourseCardProps) {
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow">
       <div className="mb-2 flex items-start justify-between gap-2">
-        <Badge className={getCategoryColor(course.category)}>
+        <Badge className={`border-transparent ${getCategoryColor(course.category)}`}>
           {course.category}
         </Badge>
         {firstSection?.enrollment_status && (
