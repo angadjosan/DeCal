@@ -428,4 +428,66 @@ router.post('/rejectCourse', authMiddleware, adminMiddleware, async (req, res) =
   }
 });
 
+// Download CPF file by course ID (admin only)
+router.get('/downloadCPF/:courseId', authMiddleware, adminMiddleware, async (req, res) => {
+  try {
+    const { courseId } = req.params;
+
+    if (!courseId) {
+      return res.status(400).json({ error: 'Course ID is required' });
+    }
+
+    // Get course data to retrieve CPF URL
+    const { data: course, error: fetchError } = await courseService.getById(courseId);
+
+    if (fetchError || !course) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+
+    if (!course.cpf) {
+      return res.status(404).json({ error: 'CPF file not found for this course' });
+    }
+
+    // Extract the file path from the CPF URL
+    // CPF URL format: https://{project}.supabase.co/storage/v1/object/public/decal-submissions/cpf-forms/{filename}
+    const cpfUrl = course.cpf;
+    const urlParts = cpfUrl.split('/cpf-forms/');
+    
+    if (urlParts.length < 2) {
+      return res.status(500).json({ error: 'Invalid CPF URL format' });
+    }
+
+    const fileName = urlParts[1];
+    const filePath = `cpf-forms/${fileName}`;
+
+    // Download file from Supabase Storage
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from('decal-submissions')
+      .download(filePath);
+
+    if (downloadError) {
+      console.error('File download error:', downloadError);
+      return res.status(500).json({ 
+        error: 'Failed to download CPF file', 
+        details: downloadError.message 
+      });
+    }
+
+    // Convert blob to buffer
+    const buffer = Buffer.from(await fileData.arrayBuffer());
+
+    // Set appropriate headers for file download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', buffer.length);
+
+    // Send the file
+    res.send(buffer);
+
+  } catch (error) {
+    console.error('Error in downloadCPF endpoint:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
 export default router;

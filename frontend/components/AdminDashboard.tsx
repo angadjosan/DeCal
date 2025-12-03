@@ -8,7 +8,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Input } from './ui/input';
 import { Checkbox } from './ui/checkbox';
-import { CheckCircle2, XCircle, AlertCircle, Eye, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, Eye, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, Download } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 
@@ -345,6 +345,58 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
         return <Badge className="bg-red-100 text-red-700">Rejected</Badge>;
       default:
         return null;
+    }
+  };
+
+  const handleDownloadCPF = async (courseId: number) => {
+    if (!session) {
+      toast.error('No active session. Please log in.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/downloadCPF/${courseId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to download CPF');
+        return;
+      }
+
+      // Get the filename from the Content-Disposition header if available
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'cpf-document.pdf';
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      // Convert response to blob
+      const blob = await response.blob();
+      
+      // Create a download link and trigger it
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('CPF downloaded successfully!');
+    } catch (error) {
+      console.error('Error downloading CPF:', error);
+      toast.error('Error downloading CPF');
     }
   };
 
@@ -708,34 +760,31 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                   </div>
                 )}
 
-                {/* Documents */}
+                {/* Syllabus */}
                 <div>
-                  <h3 className="text-[#003262] mb-3">Documents</h3>
-                  <div className="flex gap-4">
-                    {selectedSubmission.syllabus && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => window.open(selectedSubmission.syllabus, '_blank')}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Syllabus
-                      </Button>
-                    )}
-                    {selectedSubmission.cpf && (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => window.open(selectedSubmission.cpf, '_blank')}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        View CPF
-                      </Button>
-                    )}
-                    {!selectedSubmission.syllabus && !selectedSubmission.cpf && (
-                      <p className="text-gray-500">No documents uploaded</p>
-                    )}
-                  </div>
+                  <h3 className="text-[#003262] mb-3">Syllabus</h3>
+                  {selectedSubmission.syllabus ? (
+                    <p className="text-gray-700">{selectedSubmission.syllabus}</p>
+                  ) : (
+                    <p className="text-gray-500">No syllabus provided</p>
+                  )}
+                </div>
+
+                {/* CPF */}
+                <div>
+                  <h3 className="text-[#003262] mb-3">CPF</h3>
+                  {selectedSubmission.cpf ? (
+                    <Button
+                      onClick={() => handleDownloadCPF(selectedSubmission.id)}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Download CPF Document
+                    </Button>
+                  ) : (
+                    <p className="text-gray-500">No CPF uploaded</p>
+                  )}
                 </div>
 
                 {/* Facilitators */}
