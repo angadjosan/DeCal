@@ -791,6 +791,30 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                     <p className="text-gray-500 mt-3">No facilitators listed</p>
                   )}
                 </div>
+
+                {/* Application Information */}
+                {(selectedSubmission.application_url || selectedSubmission.application_due_date || selectedSubmission.enrollment_information) && (
+                  <div>
+                    <h3 className="text-[#003262] mb-3">Enrollment Information</h3>
+                    {selectedSubmission.enrollment_information && (
+                      <p className="text-gray-700 mb-2">
+                        Enrollment Information: {selectedSubmission.enrollment_information}
+                      </p>
+                    )}
+                    {selectedSubmission.application_url && (
+                      <p className="text-gray-700 mb-2">
+                        Application URL: <a href={selectedSubmission.application_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                          {selectedSubmission.application_url}
+                        </a>
+                      </p>
+                    )}
+                    {selectedSubmission.application_due_date && (
+                      <p className="text-gray-700">
+                        Application Due Date: {new Date(selectedSubmission.application_due_date).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </DialogContent>
