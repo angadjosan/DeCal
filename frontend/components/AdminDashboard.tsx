@@ -348,7 +348,7 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
     }
   };
 
-  const handleDownloadCPF = async (courseId: number) => {
+  const handleOpenCPF = async (courseId: number) => {
     if (!session) {
       toast.error('No active session. Please log in.');
       return;
@@ -364,39 +364,24 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        toast.error(errorData.error || 'Failed to download CPF');
+        toast.error(errorData.error || 'Failed to open CPF');
         return;
       }
 
-      // Get the filename from the Content-Disposition header if available
-      const contentDisposition = response.headers.get('Content-Disposition');
-      let filename = 'cpf-document.pdf';
-      if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename="(.+)"/);
-        if (filenameMatch && filenameMatch[1]) {
-          filename = filenameMatch[1];
-        }
-      }
-
-      // Convert response to blob
+      // Convert response to blob and open in new tab
       const blob = await response.blob();
-      
-      // Create a download link and trigger it
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
+      window.open(url, '_blank');
       
-      // Cleanup
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      // Cleanup after a delay to ensure the tab opens
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 100);
       
-      toast.success('CPF downloaded successfully!');
+      toast.success('CPF opened in new tab!');
     } catch (error) {
-      console.error('Error downloading CPF:', error);
-      toast.error('Error downloading CPF');
+      console.error('Error opening CPF:', error);
+      toast.error('Error opening CPF');
     }
   };
 
@@ -590,7 +575,7 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                 <div>
                   <h2 className="text-[#003262] mb-2">{selectedSubmission.title}</h2>
                   <p className="text-gray-600">
-                    {selectedSubmission.semester} | {selectedSubmission.department} | {selectedSubmission.units} units
+                    {selectedSubmission.semester} | {selectedSubmission.department}
                   </p>
                 </div>
 
@@ -683,26 +668,13 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                   <h3 className="text-[#003262] mb-3">Course Details</h3>
                   <p className="text-gray-700 mb-4">{selectedSubmission.description}</p>
                   
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-600">Category:</span>
-                      <p className="text-gray-900">{selectedSubmission.category}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Units:</span>
-                      <p className="text-gray-900">{selectedSubmission.units}</p>
-                    </div>
-                    {selectedSubmission.website && (
-                      <div>
-                        <span className="text-gray-600">Website:</span>
-                        <p className="text-gray-900">
-                          <a href={selectedSubmission.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                            {selectedSubmission.website}
-                          </a>
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  {selectedSubmission.website && (
+                    <p className="text-gray-700">
+                      Website: <a href={selectedSubmission.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {selectedSubmission.website}
+                      </a>
+                    </p>
+                  )}
                 </div>
 
                 {/* Sections */}
@@ -774,14 +746,15 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                 <div>
                   <h3 className="text-[#003262] mb-3">CPF</h3>
                   {selectedSubmission.cpf ? (
-                    <Button
-                      onClick={() => handleDownloadCPF(selectedSubmission.id)}
-                      variant="outline"
-                      className="flex items-center gap-2"
-                    >
-                      <Download className="h-4 w-4" />
-                      Download CPF Document
-                    </Button>
+                    <p className="text-gray-700">
+                      <button
+                        onClick={() => handleOpenCPF(selectedSubmission.id)}
+                        className="text-blue-600 hover:underline inline-flex items-center gap-1"
+                      >
+                        View CPF Document
+                        <Eye className="h-4 w-4" />
+                      </button>
+                    </p>
                   ) : (
                     <p className="text-gray-500">No CPF uploaded</p>
                   )}
@@ -789,27 +762,34 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
 
                 {/* Facilitators */}
                 <div>
-                  <h3 className="text-[#003262] mb-3">Facilitators & Faculty Sponsor</h3>
-                  {selectedSubmission.facilitators.length > 0 ? (
-                    <>
-                      <p className="text-gray-600 mb-2">Facilitators:</p>
-                      <ul className="space-y-1 mb-4">
-                        {selectedSubmission.facilitators.map((facilitator, index) => (
-                          <li key={index} className="text-gray-700">
-                            • {facilitator.name} ({facilitator.email})
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  ) : (
-                    <p className="text-gray-500 mb-4">No facilitators listed</p>
-                  )}
+                  <h3 className="text-[#003262] mb-3">Facilitators</h3>
                   <p className="text-gray-700">
-                    <span className="text-gray-600">Faculty Sponsor:</span> {selectedSubmission.faculty_sponsor_name} ({selectedSubmission.faculty_sponsor_email})
+                    Faculty Sponsor: {selectedSubmission.faculty_sponsor_name} ({selectedSubmission.faculty_sponsor_email})
                   </p>
                   <p className="text-gray-700 mt-2">
-                    <span className="text-gray-600">Contact Email:</span> {selectedSubmission.contact_email}
+                    Contact Email: {selectedSubmission.contact_email}
                   </p>
+                  <br></br>
+                  {selectedSubmission.facilitators.length > 0 ? (
+                    <div className="space-y-3 mt-3">
+                      {selectedSubmission.facilitators.map((facilitator, index) => (
+                        <div key={index} className="bg-gray-50 p-4 rounded-lg">
+                          <div className="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                              <span className="text-gray-600">Name:</span>
+                              <p className="text-gray-900">{facilitator.name}</p>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">Email:</span>
+                              <p className="text-gray-900">{facilitator.email}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-500 mt-3">No facilitators listed</p>
+                  )}
                 </div>
               </div>
             )}
