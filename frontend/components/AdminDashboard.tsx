@@ -766,7 +766,7 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                   <p className="text-gray-700">
                     Faculty Sponsor: {selectedSubmission.faculty_sponsor_name} ({selectedSubmission.faculty_sponsor_email})
                   </p>
-                  <p className="text-gray-700 mt-2">
+                  <p className="text-gray-700">
                     Contact Email: {selectedSubmission.contact_email}
                   </p>
                   <br></br>
@@ -774,7 +774,7 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                     <div className="space-y-3 mt-3">
                       {selectedSubmission.facilitators.map((facilitator, index) => (
                         <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                          <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="grid grid-cols-2 gap-3">
                             <div>
                               <span className="text-gray-600">Name:</span>
                               <p className="text-gray-900">{facilitator.name}</p>
