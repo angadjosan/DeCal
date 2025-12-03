@@ -26,7 +26,7 @@ const upload = multer({
 let unapprovedCoursesCache = {
   data: null,
   timestamp: null,
-  ttl: 5 * 60 * 1000 // 5 minutes in milliseconds (shorter TTL for admin data)
+  ttl: 30 * 1000 // 30 seconds in milliseconds
 };
 
 // Helper function to check if cache is valid

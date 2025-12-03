@@ -77,6 +77,7 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [showRejectMode, setShowRejectMode] = useState(false);
   
   // Filter and search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -234,6 +235,7 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
   const handleReview = (submission: UnapprovedCourse) => {
     setSelectedSubmission(submission);
     setFeedback('');
+    setShowRejectMode(false);
     setIsReviewModalOpen(true);
   };
 
@@ -281,6 +283,12 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
 
   const handleReject = async () => {
     if (!selectedSubmission || !session) return;
+    
+    // If not in reject mode yet, just show the feedback form
+    if (!showRejectMode) {
+      setShowRejectMode(true);
+      return;
+    }
     
     if (!feedback.trim()) {
       toast.error('Please provide feedback before rejecting');
@@ -534,36 +542,89 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                   </p>
                 </div>
 
-                <hr className="border-gray-200" />
-
-                {/* Auto-Validation Results */}
-                <div>
-                  <h3 className="text-[#003262] mb-3">📊 Auto-Validation Results</h3>
-                  <div className="space-y-2">
-                    {selectedSubmission.crossValidation?.match ? (
-                      <div className="flex items-center gap-2 text-green-600">
-                        <CheckCircle2 className="h-5 w-5" />
-                        <span>Faculty sponsor verified in approved courses</span>
+                {/* Admin Actions - Moved to Top */}
+                {selectedSubmission.status === 'Pending' && (
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    {!showRejectMode ? (
+                      <div className="flex gap-4">
+                        <Button
+                          className="flex-1 bg-green-600 hover:bg-green-700"
+                          onClick={handleApprove}
+                          disabled={actionLoading}
+                        >
+                          {actionLoading ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Approving...
+                            </>
+                          ) : (
+                            'Approve Course'
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="flex-1 border-red-500 text-red-500 hover:bg-red-50"
+                          onClick={handleReject}
+                          disabled={actionLoading}
+                        >
+                          Reject Course
+                        </Button>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 text-yellow-600">
-                        <AlertCircle className="h-5 w-5" />
-                        <span>No matching approved course found for faculty sponsor</span>
-                      </div>
-                    )}
-                    {selectedSubmission.cpf ? (
-                      <div className="flex items-center gap-2 text-green-600">
-                        <CheckCircle2 className="h-5 w-5" />
-                        <span>CPF file uploaded</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-red-600">
-                        <XCircle className="h-5 w-5" />
-                        <span>CPF file missing</span>
+                      <div className="space-y-4">
+                        <div>
+                          <Label htmlFor="feedback" className="text-sm font-medium mb-2 block">Rejection Feedback (Required)</Label>
+                          <Textarea
+                            id="feedback"
+                            value={feedback}
+                            onChange={(e) => setFeedback(e.target.value)}
+                            placeholder="Provide feedback to the course facilitators..."
+                            rows={4}
+                            className="w-full"
+                          />
+                        </div>
+                        <div className="flex gap-3">
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              setShowRejectMode(false);
+                              setFeedback('');
+                            }}
+                            disabled={actionLoading}
+                            className="flex-1"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            className="flex-1 bg-red-600 hover:bg-red-700 text-white border-0"
+                            onClick={handleReject}
+                            disabled={actionLoading}
+                            style={{ backgroundColor: '#dc2626', color: 'white' }}
+                          >
+                            {actionLoading ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Rejecting...
+                              </>
+                            ) : (
+                              'Submit Rejection'
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
-                </div>
+                )}
+
+                {selectedSubmission.status !== 'Pending' && (
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <p className="text-gray-700">
+                      This course has been {selectedSubmission.status === 'Active' ? 'approved' : 'rejected'}.
+                    </p>
+                  </div>
+                )}
+
+                <hr className="border-gray-200" />
 
                 {/* Course Details */}
                 <div>
@@ -589,33 +650,13 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                         </p>
                       </div>
                     )}
-                    {selectedSubmission.sections.length > 0 && (
-                      <div>
-                        <span className="text-gray-600">Meeting Times:</span>
-                        <p className="text-gray-900">
-                          {selectedSubmission.sections[0].day} at {selectedSubmission.sections[0].time}
-                        </p>
-                      </div>
-                    )}
-                    {selectedSubmission.sections.length > 0 && selectedSubmission.sections[0].room && (
-                      <div>
-                        <span className="text-gray-600">Location:</span>
-                        <p className="text-gray-900">{selectedSubmission.sections[0].room}</p>
-                      </div>
-                    )}
-                    {selectedSubmission.sections.length > 0 && selectedSubmission.sections[0].capacity && (
-                      <div>
-                        <span className="text-gray-600">Capacity:</span>
-                        <p className="text-gray-900">{selectedSubmission.sections[0].capacity}</p>
-                      </div>
-                    )}
                   </div>
                 </div>
 
                 {/* Sections */}
                 {selectedSubmission.sections.length > 0 && (
                   <div>
-                    <h3 className="text-[#003262] mb-3">📅 Course Sections</h3>
+                    <h3 className="text-[#003262] mb-3">Course Sections</h3>
                     <div className="space-y-3">
                       {selectedSubmission.sections.map((section, idx) => (
                         <div key={idx} className="bg-gray-50 p-4 rounded-lg">
@@ -669,7 +710,7 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
 
                 {/* Documents */}
                 <div>
-                  <h3 className="text-[#003262] mb-3">📄 Documents</h3>
+                  <h3 className="text-[#003262] mb-3">Documents</h3>
                   <div className="flex gap-4">
                     {selectedSubmission.syllabus && (
                       <Button 
@@ -699,7 +740,7 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
 
                 {/* Facilitators */}
                 <div>
-                  <h3 className="text-[#003262] mb-3">📧 Facilitators & Faculty Sponsor</h3>
+                  <h3 className="text-[#003262] mb-3">Facilitators & Faculty Sponsor</h3>
                   {selectedSubmission.facilitators.length > 0 ? (
                     <>
                       <p className="text-gray-600 mb-2">Facilitators:</p>
@@ -721,67 +762,6 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                     <span className="text-gray-600">Contact Email:</span> {selectedSubmission.contact_email}
                   </p>
                 </div>
-
-                <hr className="border-gray-200" />
-
-                {/* Admin Actions */}
-                {selectedSubmission.status === 'Pending' && (
-                  <div>
-                    <h3 className="text-[#003262] mb-3">Admin Actions</h3>
-                    
-                    <div className="mb-4">
-                      <Label htmlFor="feedback">Feedback (required if rejecting)</Label>
-                      <Textarea
-                        id="feedback"
-                        value={feedback}
-                        onChange={(e) => setFeedback(e.target.value)}
-                        placeholder="Provide feedback to the course facilitators..."
-                        rows={4}
-                      />
-                    </div>
-
-                    <div className="flex gap-4">
-                      <Button
-                        variant="outline"
-                        className="flex-1 border-red-500 text-red-500 hover:bg-red-50"
-                        onClick={handleReject}
-                        disabled={actionLoading}
-                      >
-                        {actionLoading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Rejecting...
-                          </>
-                        ) : (
-                          'Reject with Feedback'
-                        )}
-                      </Button>
-                      <Button
-                        className="flex-1 bg-green-600 hover:bg-green-700"
-                        onClick={handleApprove}
-                        disabled={actionLoading}
-                      >
-                        {actionLoading ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Approving...
-                          </>
-                        ) : (
-                          'Approve Course'
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {selectedSubmission.status !== 'Pending' && (
-                  <div>
-                    <h3 className="text-[#003262] mb-3">Status</h3>
-                    <p className="text-gray-700 bg-gray-50 p-4 rounded-lg">
-                      This course has been {selectedSubmission.status === 'Active' ? 'approved' : 'rejected'}.
-                    </p>
-                  </div>
-                )}
               </div>
             )}
           </DialogContent>
