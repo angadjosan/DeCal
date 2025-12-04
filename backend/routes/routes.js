@@ -12,8 +12,10 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 50 * 1024 * 1024, // 50MB max
+    files: 1, // Only allow one file
   },
   fileFilter: (req, file, cb) => {
+    // Validate file type
     if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
@@ -21,6 +23,31 @@ const upload = multer({
     }
   }
 });
+
+// Additional file validation helper
+const validatePdfFile = (file) => {
+  if (!file) return { valid: false, error: 'No file provided' };
+  
+  // Check mimetype
+  if (file.mimetype !== 'application/pdf') {
+    return { valid: false, error: 'File must be a PDF' };
+  }
+  
+  // Check file size (50MB)
+  if (file.size > 50 * 1024 * 1024) {
+    return { valid: false, error: 'File size exceeds 50MB limit' };
+  }
+  
+  // Check if file buffer starts with PDF magic bytes
+  if (file.buffer && file.buffer.length >= 4) {
+    const pdfHeader = file.buffer.slice(0, 4).toString('ascii');
+    if (pdfHeader !== '%PDF') {
+      return { valid: false, error: 'File does not appear to be a valid PDF' };
+    }
+  }
+  
+  return { valid: true };
+};
 
 // Cache for unapproved courses
 let unapprovedCoursesCache = {
@@ -83,22 +110,85 @@ router.get('/profile', authMiddleware, async (req, res) => {
   }
 });
 
+// Helper function to validate email format
+const isValidEmail = (email) => {
+  if (!email || typeof email !== 'string') return false;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email) && email.length <= 254; // RFC 5321 max length
+};
+
+// Helper function to sanitize string input
+const sanitizeString = (str, maxLength = 1000) => {
+  if (!str || typeof str !== 'string') return '';
+  return str.trim().substring(0, maxLength);
+};
+
+// Helper function to safely parse JSON
+const safeJsonParse = (str) => {
+  try {
+    if (!str || typeof str !== 'string') {
+      throw new Error('Invalid JSON string');
+    }
+    // Limit JSON string length to prevent DoS
+    if (str.length > 100000) { // 100KB limit
+      throw new Error('JSON payload too large');
+    }
+    return JSON.parse(str);
+  } catch (error) {
+    throw new Error('Invalid JSON format');
+  }
+};
+
 router.post('/submitCourse', authMiddleware, upload.single('cpf_file'), async (req, res) => {
   try {
-    // Parse the JSON data from the form
-    const courseData = JSON.parse(req.body.data);
+    // Safely parse the JSON data from the form
+    let courseData;
+    try {
+      courseData = safeJsonParse(req.body.data);
+    } catch (error) {
+      return res.status(400).json({ 
+        error: 'Invalid request data format' 
+      });
+    }
+    
     const cpfFile = req.file;
 
-    if (!cpfFile) {
+    // Validate file
+    const fileValidation = validatePdfFile(cpfFile);
+    if (!fileValidation.valid) {
       return res.status(400).json({ 
-        error: 'CPF file is required' 
+        error: fileValidation.error || 'CPF file is required' 
       });
     }
 
+    // Validate required fields
     if (!courseData.title || !courseData.faculty_sponsor_email) {
       return res.status(400).json({ 
         error: 'Missing required fields: title and faculty_sponsor_email are required' 
       });
+    }
+
+    // Validate and sanitize email addresses
+    if (!isValidEmail(courseData.faculty_sponsor_email)) {
+      return res.status(400).json({ 
+        error: 'Invalid faculty sponsor email format' 
+      });
+    }
+
+    if (courseData.contact_email && !isValidEmail(courseData.contact_email)) {
+      return res.status(400).json({ 
+        error: 'Invalid contact email format' 
+      });
+    }
+
+    // Sanitize string inputs
+    courseData.title = sanitizeString(courseData.title, 200);
+    courseData.department = sanitizeString(courseData.department, 100);
+    courseData.category = sanitizeString(courseData.category, 50);
+    courseData.faculty_sponsor_name = sanitizeString(courseData.faculty_sponsor_name, 200);
+    courseData.faculty_sponsor_email = courseData.faculty_sponsor_email.toLowerCase().trim();
+    if (courseData.contact_email) {
+      courseData.contact_email = courseData.contact_email.toLowerCase().trim();
     }
 
     if (!courseData.semester) {
@@ -188,18 +278,29 @@ router.post('/submitCourse', authMiddleware, upload.single('cpf_file'), async (r
 
     // Insert facilitators if provided
     if (facilitators && facilitators.length > 0) {
-      const facilitatorsToInsert = facilitators.map(facilitator => ({
-        course_id: data.id,
-        name: facilitator.name,
-        email: facilitator.email
-      }));
+      // Validate and sanitize facilitator data
+      const facilitatorsToInsert = facilitators
+        .filter(facilitator => facilitator && facilitator.name && facilitator.email)
+        .map(facilitator => {
+          // Validate email
+          if (!isValidEmail(facilitator.email)) {
+            throw new Error(`Invalid facilitator email: ${facilitator.email}`);
+          }
+          return {
+            course_id: data.id,
+            name: sanitizeString(facilitator.name, 200),
+            email: facilitator.email.toLowerCase().trim()
+          };
+        });
 
-      const { error: facilitatorsError } = await supabase
-        .from('course_facilitators')
-        .insert(facilitatorsToInsert);
+      if (facilitatorsToInsert.length > 0) {
+        const { error: facilitatorsError } = await supabase
+          .from('course_facilitators')
+          .insert(facilitatorsToInsert);
 
-      if (facilitatorsError) {
-        console.error('Error inserting facilitators:', facilitatorsError);
+        if (facilitatorsError) {
+          console.error('Error inserting facilitators:', facilitatorsError);
+        }
       }
     }
 
@@ -342,6 +443,21 @@ router.post('/approveCourse', authMiddleware, adminMiddleware, async (req, res) 
       return res.status(400).json({ error: 'Course ID is required' });
     }
 
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      return res.status(400).json({ error: 'Invalid course ID format' });
+    }
+
+    // Validate facilitator emails if provided
+    if (facilitatorEmails && Array.isArray(facilitatorEmails)) {
+      for (const email of facilitatorEmails) {
+        if (!isValidEmail(email)) {
+          return res.status(400).json({ error: `Invalid facilitator email: ${email}` });
+        }
+      }
+    }
+
     const { data: course, error: fetchError } = await courseService.getById(id);
 
     if (fetchError || !course) {
@@ -387,6 +503,26 @@ router.post('/rejectCourse', authMiddleware, adminMiddleware, async (req, res) =
 
     if (!id) {
       return res.status(400).json({ error: 'Course ID is required' });
+    }
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      return res.status(400).json({ error: 'Invalid course ID format' });
+    }
+
+    // Sanitize feedback if provided
+    if (feedback && typeof feedback === 'string') {
+      req.body.feedback = sanitizeString(feedback, 5000);
+    }
+
+    // Validate facilitator emails if provided
+    if (facilitatorEmails && Array.isArray(facilitatorEmails)) {
+      for (const email of facilitatorEmails) {
+        if (!isValidEmail(email)) {
+          return res.status(400).json({ error: `Invalid facilitator email: ${email}` });
+        }
+      }
     }
 
     const { data: course, error: fetchError } = await courseService.getById(id);
@@ -435,6 +571,12 @@ router.get('/downloadCPF/:courseId', authMiddleware, adminMiddleware, async (req
 
     if (!courseId) {
       return res.status(400).json({ error: 'Course ID is required' });
+    }
+
+    // Validate UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(courseId)) {
+      return res.status(400).json({ error: 'Invalid course ID format' });
     }
 
     // Get course data to retrieve CPF URL

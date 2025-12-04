@@ -26,11 +26,29 @@ npm run dev
 
 ## Environment Variables
 
+### Required
 - `SUPABASE_URL`: Your Supabase project URL
 - `SUPABASE_SERVICE_ROLE_KEY`: Your Supabase service role key (for server-side operations)
+- `ALLOWED_ORIGINS`: Comma-separated list of allowed CORS origins (e.g., `https://yourdomain.com,https://www.yourdomain.com`)
+  - Defaults to `http://localhost:5173,http://localhost:3000` for development
+  - **Required for production** - set to your production domain(s)
+
+### Optional
 - `PORT`: Server port (default: 3000)
 - `NODE_ENV`: Environment (development/production)
 - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`: Email configuration for notifications
+
+## Security
+
+This application includes security measures:
+- CORS protection with origin whitelisting
+- Security headers (helmet.js)
+- Input validation and sanitization
+- Rate limiting
+- File upload validation
+- Authentication and authorization middleware
+
+See `SECURITY_AUDIT.md` for detailed security information and deployment checklist.
 
 ## API Endpoints
 
