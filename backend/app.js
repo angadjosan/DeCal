@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
-import helmet from 'helmet';
 import { createClient } from '@supabase/supabase-js';
 import routes from './routes/routes.js';
 import { authMiddleware } from './middleware/auth.js';
@@ -18,41 +17,6 @@ export const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Security headers
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "https:"],
-    },
-  },
-  crossOriginEmbedderPolicy: false, // Allow Supabase iframes if needed
-}));
-
-// CORS configuration - restrict to allowed origins
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
-  ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['http://localhost:5173', 'http://localhost:3000']; // Default for development
-
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.) in development only
-    if (!origin && process.env.NODE_ENV === 'development') {
-      return callback(null, true);
-    }
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
-
 // Rate limiter for public endpoints
 const publicRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -61,18 +25,18 @@ const publicRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-// Rate limiter for private endpoints
+// Rate limiter for public endpoints
 const privateRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 200, // Reduced from 1000 to 200 for better security
+  max: 1000, // Limit each IP to 1000 requests per windowMs
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-// Request body size limits to prevent DoS attacks
-app.use(express.json({ limit: '1mb' })); // Limit JSON payloads to 1MB
-app.use(express.urlencoded({ extended: true, limit: '1mb' })); // Limit URL-encoded payloads to 1MB
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Cache for approved courses
 let approvedCoursesCache = {
@@ -242,8 +206,8 @@ app.get('/api/courses/:id', publicRateLimiter, async (req, res) => {
   }
 });
 
-// Protected endpoint for check if user is admin (requires authentication)
-app.get('/admin/check', authMiddleware, async (req, res) => {
+// Public endpoint for check if user is admin
+app.get('/admin/check', async (req, res) => {
   try {
     const user = req.user;
     
@@ -272,11 +236,9 @@ app.use('/api', privateRateLimiter, routes);
 
 app.use((err, req, res, next) => {
   console.error('Error:', err);
-  // Never expose stack traces in production
-  const isDevelopment = process.env.NODE_ENV === 'development';
   res.status(err.status || 500).json({
     error: err.message || 'Internal server error',
-    ...(isDevelopment && { stack: err.stack })
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 });
 
