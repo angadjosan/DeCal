@@ -178,6 +178,33 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
     return <ArrowUpDown className="h-4 w-4 ml-1 opacity-40" />;
   };
 
+  // Helper function to parse semester into a comparable value
+  const parseSemester = (semester: string): number => {
+    const parts = semester.split(' ');
+    if (parts.length !== 2) return 0;
+    
+    const [season, yearStr] = parts;
+    const year = parseInt(yearStr, 10);
+    
+    // Assign numeric values to seasons: Spring=0, Summer=1, Fall=2
+    const seasonValue = season === 'Spring' ? 0 : season === 'Summer' ? 1 : season === 'Fall' ? 2 : -1;
+    
+    // Combine year and season into a single comparable number
+    // Example: Fall 2027 = 2027 * 10 + 2 = 20272
+    // Example: Spring 2026 = 2026 * 10 + 0 = 20260
+    return year * 10 + seasonValue;
+  };
+
+  // Helper function to get status sort priority
+  const getStatusPriority = (status: string): number => {
+    switch (status) {
+      case 'Pending': return 0;
+      case 'Active': return 1;
+      case 'Rejected': return 2;
+      default: return 3;
+    }
+  };
+
   // Apply filters and sorting
   const filteredAndSortedSubmissions = useMemo(() => {
     let filtered = submissions.filter(sub => {
@@ -200,32 +227,25 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
       return true;
     });
 
-    // Apply sorting
-    if (sortDirection) {
-      filtered = [...filtered].sort((a, b) => {
-        let aValue: any = a[sortField];
-        let bValue: any = b[sortField];
-
-        // Handle dates
-        if (sortField === 'created_at') {
-          aValue = new Date(aValue).getTime();
-          bValue = new Date(bValue).getTime();
-        }
-
-        // Handle strings
-        if (typeof aValue === 'string' && typeof bValue === 'string') {
-          aValue = aValue.toLowerCase();
-          bValue = bValue.toLowerCase();
-        }
-
-        if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
-        if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
+    // Apply custom sorting: first by semester (desc), then by status
+    filtered = [...filtered].sort((a, b) => {
+      // First, sort by semester (descending - latest first)
+      const semesterA = parseSemester(a.semester);
+      const semesterB = parseSemester(b.semester);
+      
+      if (semesterA !== semesterB) {
+        return semesterB - semesterA; // Descending order
+      }
+      
+      // If semesters are the same, sort by status priority
+      const statusA = getStatusPriority(a.status);
+      const statusB = getStatusPriority(b.status);
+      
+      return statusA - statusB; // Ascending order (Pending first)
+    });
 
     return filtered;
-  }, [submissions, statusFilters, selectedSemester, searchQuery, sortField, sortDirection]);
+  }, [submissions, statusFilters, selectedSemester, searchQuery]);
 
   const stats = {
     pending: submissions.filter(s => s.status === 'Pending').length,
