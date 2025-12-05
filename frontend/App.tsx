@@ -46,58 +46,73 @@ export default function App() {
   const [userRole, setUserRole] = useState<UserRole>("student");
   const [loading, setLoading] = useState(true);
 
-  // Load initial session and listen for changes
+  // Load initial session and fetch profile in parallel
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
+    const initializeAuth = async () => {
+      const { data } = await supabase.auth.getSession();
       setSession(data.session);
+      
+      if (data.session) {
+        // Fetch profile immediately when session exists
+        try {
+          const response = await fetch('/api/profile', {
+            headers: {
+              'Authorization': `Bearer ${data.session.access_token}`
+            }
+          });
+
+          if (response.ok) {
+            const profileData = await response.json();
+            setUserRole(profileData.profile.is_admin ? "admin" : "student");
+          } else {
+            setUserRole("student");
+          }
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+          setUserRole("student");
+        }
+      } else {
+        setUserRole("student");
+      }
+      
       setLoading(false);
-    });
+    };
+
+    initializeAuth();
 
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, newSession) => {
+      async (_event, newSession) => {
         setSession(newSession);
+        
+        if (newSession) {
+          // Fetch profile when session changes
+          try {
+            const response = await fetch('/api/profile', {
+              headers: {
+                'Authorization': `Bearer ${newSession.access_token}`
+              }
+            });
+
+            if (response.ok) {
+              const profileData = await response.json();
+              setUserRole(profileData.profile.is_admin ? "admin" : "student");
+            } else {
+              setUserRole("student");
+            }
+          } catch (error) {
+            console.error('Error fetching user profile:', error);
+            setUserRole("student");
+          }
+        } else {
+          setUserRole("student");
+        }
+        
         setLoading(false);
       }
     );
 
     return () => listener.subscription.unsubscribe();
   }, []);
-
-  // Fetch user profile when session changes
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!session) {
-        setUserRole("student");
-        return;
-      }
-
-      try {
-        const { data: { session: currentSession } } = await supabase.auth.getSession();
-        if (!currentSession) {
-          setUserRole("student");
-          return;
-        }
-
-        const response = await fetch('/api/profile', {
-          headers: {
-            'Authorization': `Bearer ${currentSession.access_token}`
-          }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setUserRole(data.profile.is_admin ? "admin" : "student");
-        } else {
-          setUserRole("student");
-        }
-      } catch (error) {
-        console.error('Error fetching user profile:', error);
-        setUserRole("student");
-      }
-    };
-
-    fetchUserProfile();
-  }, [session]);
 
   // Google login (called from navigation if needed)
   const handleGoogleLogin = async () => {
