@@ -62,7 +62,7 @@ The backend expects the following Supabase tables:
 
 - `users` - User authentication and permissions
 - `courses` - Course submissions
-- `approved_courses` - Approved courses from Google Sheets
+- `crossref_courses` - Approved courses from Google Sheets
 - `sections` - Course sections
 - `facilitators` - Course facilitators
 

@@ -126,7 +126,7 @@ export const approvedCourseService = {
   async getAll() {
     try {
       const { data, error } = await supabase
-        .from('approved_courses')
+        .from('crossref_courses')
         .select('*');
 
       if (error) throw error;
@@ -140,7 +140,7 @@ export const approvedCourseService = {
   async findByInstructorEmail(email, semester) {
     try {
       const { data, error } = await supabase
-        .from('approved_courses')
+        .from('crossref_courses')
         .select('*')
         .eq('instructor_of_record_email', email)
         .eq('semester', semester);
