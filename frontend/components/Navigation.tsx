@@ -26,7 +26,6 @@ export function Navigation({ isLoggedIn = false, userRole, handleGoogleLogin, ha
   ];
 
   const resourcesItems = [
-    { label: 'About', path: '/about' },
     { label: 'FAQ', path: '/faq' },
     { label: 'How to Facilitate', path: '/facilitate' }
   ];

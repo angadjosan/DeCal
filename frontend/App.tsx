@@ -164,7 +164,6 @@ export default function App() {
             <AdminDashboard session={session} />
           </AdminProtectedRoute>
         } />
-        <Route path="/about" element={<StaticPages page="about" />} />
         <Route path="/faq" element={<StaticPages page="faq" />} />
         <Route path="/facilitate" element={<StaticPages page="facilitate" />} />
         <Route path="*" element={<NotFound />} />
