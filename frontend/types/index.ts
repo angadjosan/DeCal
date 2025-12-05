@@ -31,7 +31,6 @@ export interface Course {
   contact_email: string;
   website?: string;
   faculty_sponsor_name: string;
-  faculty_sponsor_email: string;
   enrollment_information?: string;
   application_url?: string;
   application_due_date?: string;

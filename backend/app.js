@@ -117,6 +117,7 @@ app.get('/api/approvedCourses', publicRateLimiter, async (req, res) => {
       application_url: course.application_url,
       application_due_date: course.application_due_date,
       time_to_complete: course.time_to_complete,
+      syllabus: course.syllabus,
       sections: course.sections,
       facilitators: course.facilitators
     }));
@@ -192,6 +193,7 @@ app.get('/api/courses/:id', publicRateLimiter, async (req, res) => {
       application_url: course.application_url,
       application_due_date: course.application_due_date,
       time_to_complete: course.time_to_complete,
+      syllabus: course.syllabus,
       sections: sections || [],
       facilitators: facilitators || []
     };
