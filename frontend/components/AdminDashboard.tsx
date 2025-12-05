@@ -398,14 +398,14 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
-      <div className="max-w-[1800px] mx-auto px-6 py-12">
-        <div className="mb-8 text-center">
+      <div className="max-w-[1440px] mx-auto px-6 py-8">
+        <div className="mb-8">
           <h1 className="text-[#003262] mb-2">Admin Dashboard</h1>
         </div>
 
-        <div className="flex gap-6">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* Left Sidebar - Filters */}
-          <div className="w-80 flex-shrink-0">
+          <aside className="lg:w-[280px] flex-shrink-0">
             <div className="bg-white border border-gray-200 rounded-lg p-6 sticky top-24">
               <h2 className="text-lg font-semibold text-[#003262] mb-4">Filters</h2>
               
@@ -478,7 +478,7 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                 </div>
               </div>
             </div>
-          </div>
+          </aside>
 
           {/* Main Content - Table */}
           <div className="flex-1 min-w-0">

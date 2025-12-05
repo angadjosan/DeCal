@@ -175,6 +175,9 @@ export function CoursesPage() {
     <div className="min-h-screen bg-gray-50 pt-16">
       {/* Main Content */}
       <div className="max-w-[1440px] mx-auto px-6 py-8">
+        <div className="mb-8">
+          <h1 className="text-[#003262] mb-2">Courses Dashboard</h1>
+        </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Filter Sidebar */}
