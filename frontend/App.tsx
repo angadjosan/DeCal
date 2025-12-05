@@ -1,10 +1,9 @@
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { Navigation } from './components/Navigation';
 import { CoursesPage } from './components/CoursesPage';
 import { CourseDetailsPage } from './components/CourseDetailsPage';
 import { SubmissionForm } from './components/SubmissionForm';
 import { AdminDashboard } from './components/AdminDashboard';
-import { LoginPage } from './components/LoginPage';
 import { StaticPages } from './components/StaticPages';
 import { NotFound } from './components/NotFound';
 import { Toaster } from './components/ui/sonner';
@@ -13,10 +12,8 @@ import { createClient, Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { toast } from 'sonner';
 
-const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey =
-  import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Protected Route Component that shows toast when redirecting
