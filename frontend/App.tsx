@@ -17,7 +17,11 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Protected Route Component that shows toast when redirecting
-function ProtectedRoute({ isLoggedIn, children }: { isLoggedIn: boolean; children: React.ReactNode }) {
+function ProtectedRoute({ isLoggedIn, loading, children }: { isLoggedIn: boolean; loading: boolean; children: React.ReactNode }) {
+  if (loading) {
+    return null; // Or a loading spinner
+  }
+  
   if (!isLoggedIn) {
     toast.error('Please log in to submit a DeCal', {
       duration: 4000,
@@ -40,16 +44,19 @@ function AdminProtectedRoute({ userRole, children }: { userRole: UserRole; child
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<UserRole>("student");
+  const [loading, setLoading] = useState(true);
 
   // Load initial session and listen for changes
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
+      setLoading(false);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, newSession) => {
         setSession(newSession);
+        setLoading(false);
       }
     );
 
@@ -135,7 +142,7 @@ export default function App() {
         <Route path="/courses" element={<CoursesPage />} />
         <Route path="/details/:id" element={<CourseDetailsPage />} />
         <Route path="/submit" element={
-          <ProtectedRoute isLoggedIn={isLoggedIn}>
+          <ProtectedRoute isLoggedIn={isLoggedIn} loading={loading}>
             <SubmissionForm session={session} />
           </ProtectedRoute>
         } />
