@@ -1,14 +1,14 @@
 import { Calendar, MapPin } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Course } from '../types';
 
 interface CourseCardProps {
   course: Course;
+  onViewDetails: (course: Course) => void;
 }
 
-export function CourseCard({ course }: CourseCardProps) {
+export function CourseCard({ course, onViewDetails }: CourseCardProps) {
 
   const getCategoryColor = (category: string) => {
     const colors: Record<string, string> = {
@@ -112,14 +112,13 @@ export function CourseCard({ course }: CourseCardProps) {
         </div>
       </div>
 
-      <Link to={`/details/${course.id}`}>
-        <Button
-          variant="outline"
-          className="w-full border-[#003262] text-[#003262] hover:bg-[#003262] hover:text-white"
-        >
-          View Details →
-        </Button>
-      </Link>
+      <Button
+        variant="outline"
+        className="w-full border-[#003262] text-[#003262] hover:bg-[#003262] hover:text-white"
+        onClick={() => onViewDetails(course)}
+      >
+        View Details →
+      </Button>
     </div>
   );
 }

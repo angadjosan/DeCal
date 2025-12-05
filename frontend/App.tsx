@@ -1,7 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Navigation } from './components/Navigation';
 import { CoursesPage } from './components/CoursesPage';
-import { CourseDetailsPage } from './components/CourseDetailsPage';
 import { SubmissionForm } from './components/SubmissionForm';
 import { AdminDashboard } from './components/AdminDashboard';
 import { StaticPages } from './components/StaticPages';
@@ -155,7 +154,6 @@ export default function App() {
       <Routes>
         <Route path="/" element={<CoursesPage />} />
         <Route path="/courses" element={<CoursesPage />} />
-        <Route path="/details/:id" element={<CourseDetailsPage />} />
         <Route path="/submit" element={
           <ProtectedRoute isLoggedIn={isLoggedIn} loading={loading}>
             <SubmissionForm session={session} />

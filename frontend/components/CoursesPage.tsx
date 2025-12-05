@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Search } from 'lucide-react';
 import { CourseCard } from './CourseCard';
+import { CourseDetailModal } from './CourseDetailModal';
 import { Input } from './ui/input';
 import { Checkbox } from './ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -20,6 +21,8 @@ export function CoursesPage() {
   const [timeCommitment, setTimeCommitment] = useState([10]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const categories = [
     'Publication',
@@ -158,6 +161,16 @@ export function CoursesPage() {
     setTimeCommitment([10]);
   };
 
+  const handleViewDetails = (course: Course) => {
+    setSelectedCourse(course);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedCourse(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       {/* Main Content */}
@@ -289,6 +302,7 @@ export function CoursesPage() {
                   <CourseCard
                     key={course.id}
                     course={course}
+                    onViewDetails={handleViewDetails}
                   />
                 ))}
               </div>
@@ -303,6 +317,11 @@ export function CoursesPage() {
           </div>
         </div>
       </div>
+      <CourseDetailModal
+        course={selectedCourse}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+      />
     </div>
   );
 }
