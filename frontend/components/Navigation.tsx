@@ -22,8 +22,7 @@ export function Navigation({ isLoggedIn = false, userRole, handleGoogleLogin, ha
   const location = useLocation();
 
   const navItems = [
-    { label: 'Courses', path: '/courses' },
-    { label: 'Submit a DeCal', path: '/submit' }
+    { label: 'Courses', path: '/courses' }
   ];
 
   const resourcesItems = [
@@ -80,6 +79,16 @@ export function Navigation({ isLoggedIn = false, userRole, handleGoogleLogin, ha
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {/* Submit a DeCal Link */}
+          <Link
+            to="/submit"
+            className={`text-white/80 hover:text-white transition-colors ${
+              location.pathname === '/submit' ? 'text-white' : ''
+            }`}
+          >
+            Submit a DeCal
+          </Link>
 
           {/* Admin Dashboard Link - Only visible to admins */}
           {userRole === 'admin' && (
@@ -180,6 +189,17 @@ export function Navigation({ isLoggedIn = false, userRole, handleGoogleLogin, ha
                     </Link>
                   ))}
                 </div>
+
+                {/* Submit a DeCal in Mobile */}
+                <Link
+                  to="/submit"
+                  onClick={handleMobileMenuClose}
+                  className={`text-left p-2 rounded-lg hover:bg-gray-100 w-full block ${
+                    location.pathname === '/submit' ? 'bg-gray-100 text-[#003262]' : 'text-gray-700'
+                  }`}
+                >
+                  Submit a DeCal
+                </Link>
 
                 {/* Admin Dashboard in Mobile - Only visible to admins */}
                 {userRole === 'admin' && (
