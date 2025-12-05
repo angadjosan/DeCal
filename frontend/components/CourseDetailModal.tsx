@@ -34,7 +34,7 @@ export function CourseDetailModal({ course, isOpen, onClose }: CourseDetailModal
 
           {/* Course Details */}
           <div>
-            <h3 className="text-[#003262] mb-3">Course Details</h3>
+            <h3 className="text-lg font-semibold text-[#003262] mb-3">Course Details</h3>
             <p className="text-gray-700 mb-4">{course.description}</p>
             
             {course.website && (
@@ -49,7 +49,7 @@ export function CourseDetailModal({ course, isOpen, onClose }: CourseDetailModal
           {/* Enrollment Information */}
           {(course.application_url || course.application_due_date || course.enrollment_information) && (
             <div>
-              <h3 className="text-[#003262] mb-3">Enrollment Information</h3>
+              <h3 className="text-lg font-semibold text-[#003262] mb-3">Enrollment Information</h3>
               {course.enrollment_information && (
                 <p className="text-gray-700 mb-2">
                   Enrollment Information: {course.enrollment_information}
@@ -73,7 +73,7 @@ export function CourseDetailModal({ course, isOpen, onClose }: CourseDetailModal
           {/* Sections */}
           {course.sections.length > 0 && (
             <div>
-              <h3 className="text-[#003262] mb-3">Course Sections</h3>
+              <h3 className="text-lg font-semibold text-[#003262] mb-3">Course Sections</h3>
               <div className="space-y-3">
                 {course.sections.map((section, idx) => (
                   <div key={idx} className="bg-gray-50 p-4 rounded-lg">
@@ -127,7 +127,7 @@ export function CourseDetailModal({ course, isOpen, onClose }: CourseDetailModal
 
           {/* Syllabus */}
           <div>
-            <h3 className="text-[#003262] mb-3">Syllabus</h3>
+            <h3 className="text-lg font-semibold text-[#003262] mb-3">Syllabus</h3>
             {course.syllabus ? (
               <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
                 <RichTextViewer content={course.syllabus} className="text-gray-700" />
@@ -139,7 +139,7 @@ export function CourseDetailModal({ course, isOpen, onClose }: CourseDetailModal
 
           {/* Facilitators */}
           <div>
-            <h3 className="text-[#003262] mb-3">Facilitators</h3>
+            <h3 className="text-lg font-semibold text-[#003262] mb-3">Facilitators</h3>
             <p className="text-gray-700">
               Faculty Sponsor: {course.faculty_sponsor_name} ({course.faculty_sponsor_email})
             </p>

@@ -666,7 +666,7 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
 
                 {/* Course Details */}
                 <div>
-                  <h3 className="text-[#003262] mb-3">Course Details</h3>
+                  <h3 className="text-lg font-semibold text-[#003262] mb-3">Course Details</h3>
                   <p className="text-gray-700 mb-4">{selectedSubmission.description}</p>
                   
                   {selectedSubmission.website && (
@@ -681,7 +681,7 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                 {/* Sections */}
                 {selectedSubmission.sections.length > 0 && (
                   <div>
-                    <h3 className="text-[#003262] mb-3">Course Sections</h3>
+                    <h3 className="text-lg font-semibold text-[#003262] mb-3">Course Sections</h3>
                     <div className="space-y-3">
                       {selectedSubmission.sections.map((section, idx) => (
                         <div key={idx} className="bg-gray-50 p-4 rounded-lg">
@@ -735,7 +735,7 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
 
                 {/* Syllabus */}
                 <div>
-                  <h3 className="text-[#003262] mb-3">Syllabus</h3>
+                  <h3 className="text-lg font-semibold text-[#003262] mb-3">Syllabus</h3>
                   {selectedSubmission.syllabus ? (
                     <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
                       <RichTextViewer content={selectedSubmission.syllabus} className="text-gray-700" />
@@ -747,7 +747,7 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
 
                 {/* CPF */}
                 <div>
-                  <h3 className="text-[#003262] mb-3">CPF</h3>
+                  <h3 className="text-lg font-semibold text-[#003262] mb-3">CPF</h3>
                   {selectedSubmission.cpf ? (
                     <p className="text-gray-700">
                       <button
@@ -765,7 +765,7 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
 
                 {/* Facilitators */}
                 <div>
-                  <h3 className="text-[#003262] mb-3">Facilitators</h3>
+                  <h3 className="text-lg font-semibold text-[#003262] mb-3">Facilitators</h3>
                   <p className="text-gray-700">
                     Faculty Sponsor: {selectedSubmission.faculty_sponsor_name} ({selectedSubmission.faculty_sponsor_email})
                   </p>
@@ -798,7 +798,7 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                 {/* Application Information */}
                 {(selectedSubmission.application_url || selectedSubmission.application_due_date || selectedSubmission.enrollment_information) && (
                   <div>
-                    <h3 className="text-[#003262] mb-3">Enrollment Information</h3>
+                    <h3 className="text-lg font-semibold text-[#003262] mb-3">Enrollment Information</h3>
                     {selectedSubmission.enrollment_information && (
                       <p className="text-gray-700 mb-2">
                         Enrollment Information: {selectedSubmission.enrollment_information}
