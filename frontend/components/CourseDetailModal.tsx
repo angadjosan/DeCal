@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Course } from '../types';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
+import { RichTextViewer } from './ui/rich-text-editor';
 
 interface CourseDetailModalProps {
   course: Course | null;
@@ -113,6 +114,14 @@ export function CourseDetailModal({ course, isOpen, onClose }: CourseDetailModal
               <p className="text-gray-500 italic">No sections available</p>
             )}
           </div>
+
+          {/* Syllabus */}
+          {course.syllabus && (
+            <div>
+              <h3 className="text-[#003262] mb-3">Syllabus</h3>
+              <RichTextViewer content={course.syllabus} className="text-gray-700" />
+            </div>
+          )}
 
           {/* Application */}
           {course.application_url && (

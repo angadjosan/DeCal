@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Course } from '../types';
 import { toast } from 'sonner';
+import { RichTextViewer } from './ui/rich-text-editor';
 
 export function CourseDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -250,6 +251,17 @@ export function CourseDetailsPage() {
           <p className="text-gray-500 italic">No sections available</p>
         )}
       </div>
+
+      {/* Syllabus */}
+      {course.syllabus && (
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <FileText className="h-5 w-5 text-[#003262]" />
+            <h2 className="text-xl font-semibold text-[#003262]">Syllabus</h2>
+          </div>
+          <RichTextViewer content={course.syllabus} className="text-gray-700" />
+        </div>
+      )}
 
       {/* Application */}
       {course.application_url && (

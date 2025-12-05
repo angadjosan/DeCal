@@ -11,6 +11,7 @@ import { Checkbox } from './ui/checkbox';
 import { CheckCircle2, XCircle, AlertCircle, Eye, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, Download } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
+import { RichTextViewer } from './ui/rich-text-editor';
 
 interface CourseFacilitator {
   id?: number;
@@ -736,7 +737,7 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                 <div>
                   <h3 className="text-[#003262] mb-3">Syllabus</h3>
                   {selectedSubmission.syllabus ? (
-                    <p className="text-gray-700">{selectedSubmission.syllabus}</p>
+                    <RichTextViewer content={selectedSubmission.syllabus} className="text-gray-700" />
                   ) : (
                     <p className="text-gray-500">No syllabus provided</p>
                   )}

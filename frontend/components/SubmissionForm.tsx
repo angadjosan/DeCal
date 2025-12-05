@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Session } from "@supabase/supabase-js";
+import { RichTextEditor } from "./ui/rich-text-editor";
 
 const categories = [
   "Publication",
@@ -589,18 +590,10 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
                 <Label htmlFor="syllabus_text">
                   Syllabus *
                 </Label>
-                <Textarea
-                  id="syllabus_text"
-                  value={formData.syllabus_text}
-                  onChange={(e) =>
-                    handleChange(
-                      "syllabus_text",
-                      e.target.value,
-                    )
-                  }
+                <RichTextEditor
+                  content={formData.syllabus_text}
+                  onChange={(content) => handleChange("syllabus_text", content)}
                   placeholder="Paste your syllabus here or provide a detailed course outline..."
-                  rows={8}
-                  className="resize-none"
                 />
               </div>
 
