@@ -169,6 +169,20 @@ export default function App() {
         <Route path="*" element={<NotFound />} />
       </Routes>
       <Toaster />
+      
+      {/* OCF Hosting Badge and Disclaimer - Fixed bottom left */}
+      <div style={{ position: 'fixed', bottom: '16px', left: '16px', zIndex: 50, display: 'flex', alignItems: 'center', gap: '12px', maxWidth: '500px' }}>
+        <a href="https://www.ocf.berkeley.edu">
+          <img 
+            src="http://www.ocf.berkeley.edu/hosting-logos/ocf-hosted-penguin.svg"
+            alt="Hosted by the OCF" 
+            style={{ border: 0, width: '80px', height: 'auto' }} 
+          />
+        </a>
+        <p style={{ fontSize: '10px', lineHeight: '1.3', color: '#666', margin: 0 }}>
+          We are a student group acting independently of the University of California. We take full responsibility for our organization and this web site.
+        </p>
+      </div>
     </div>
   );
 }
