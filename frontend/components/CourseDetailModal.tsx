@@ -140,13 +140,6 @@ export function CourseDetailModal({ course, isOpen, onClose }: CourseDetailModal
           {/* Facilitators */}
           <div>
             <h3 className="text-lg font-semibold text-[#003262] mb-3">Facilitators</h3>
-            <p className="text-gray-700">
-              Faculty Sponsor: {course.faculty_sponsor_name} ({course.faculty_sponsor_email})
-            </p>
-            <p className="text-gray-700">
-              Contact Email: {course.contact_email}
-            </p>
-            <br />
             {course.facilitators.length > 0 ? (
               <div className="space-y-3 mt-3">
                 {course.facilitators.map((facilitator, index) => (
