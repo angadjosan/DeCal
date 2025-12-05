@@ -66,7 +66,7 @@ export function CoursesPage() {
   }, []);
 
   const filteredCourses = useMemo(() => {
-    return courses.filter(course => {
+    const filtered = courses.filter(course => {
       // Search query - search across all fields
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -133,6 +133,9 @@ export function CoursesPage() {
 
       return true;
     });
+
+    // Sort alphabetically by title
+    return filtered.sort((a, b) => a.title.localeCompare(b.title));
   }, [courses, searchQuery, selectedSemester, selectedCategories, selectedDepartments, selectedUnits, selectedStatuses]);
 
   const toggleCategory = (category: string) => {
