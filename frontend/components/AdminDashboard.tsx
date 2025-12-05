@@ -737,7 +737,9 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                 <div>
                   <h3 className="text-[#003262] mb-3">Syllabus</h3>
                   {selectedSubmission.syllabus ? (
-                    <RichTextViewer content={selectedSubmission.syllabus} className="text-gray-700" />
+                    <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
+                      <RichTextViewer content={selectedSubmission.syllabus} className="text-gray-700" />
+                    </div>
                   ) : (
                     <p className="text-gray-500">No syllabus provided</p>
                   )}

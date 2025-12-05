@@ -259,7 +259,9 @@ export function CourseDetailsPage() {
             <FileText className="h-5 w-5 text-[#003262]" />
             <h2 className="text-xl font-semibold text-[#003262]">Syllabus</h2>
           </div>
-          <RichTextViewer content={course.syllabus} className="text-gray-700" />
+          <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
+            <RichTextViewer content={course.syllabus} className="text-gray-700" />
+          </div>
         </div>
       )}
 
