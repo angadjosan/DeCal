@@ -57,6 +57,9 @@ export function CourseCard({ course, onViewDetails }: CourseCardProps) {
       </p>
 
       <div className="mb-3">
+        {course.sections.length > 0 && (
+          <p className="text-sm font-medium text-gray-700 mb-2">Sections</p>
+        )}
         <div className="flex items-start gap-3 flex-wrap">
           {/* Sections */}
           {course.sections.length > 0 && (
