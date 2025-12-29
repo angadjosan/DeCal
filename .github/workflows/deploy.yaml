@@ -44,8 +44,8 @@ jobs:
           npm ci
           npm run build
 
-      - name: Deploy backend service
-        run: gcloud app deploy backend/app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
-
       - name: Deploy frontend service
         run: gcloud app deploy frontend/app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Deploy backend service
+        run: gcloud app deploy backend/app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
