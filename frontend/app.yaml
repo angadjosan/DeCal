@@ -3,7 +3,7 @@ service: default
 
 handlers:
   # Serve built static assets (JS, CSS, images)
-  - url: /(assets/.*)
+  - url: /assets
     static_dir: dist/assets
     secure: always
 
