@@ -115,12 +115,11 @@ export default function App() {
 
   // Google login (called from navigation if needed)
   const handleGoogleLogin = async () => {
-    // Get the intended redirect URL or use current path
-    const redirectPath = sessionStorage.getItem('redirectAfterLogin') || window.location.pathname;
+    const redirectPath = `${window.location.origin}/`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}${redirectPath}`,
+        redirectTo: redirectPath,
         queryParams: {
           access_type: "offline",
           prompt: "consent"
