@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Users, Calendar, MapPin, ExternalLink, FileText, ArrowLeft } from 'lucide-react';
+import { Users, Calendar, MapPin, ExternalLink, FileText, ArrowLeft, Download } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Course } from '../types';
@@ -54,6 +54,35 @@ export function CourseDetailsPage() {
 
     fetchCourse();
   }, [id]);
+
+  const handleDownloadSyllabus = async () => {
+    if (!course?.id) return;
+
+    try {
+      const response = await fetch(`/api/downloadSyllabus/${course.id}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to download syllabus');
+        return;
+      }
+
+      // Convert response to blob and open in new tab
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      
+      // Cleanup after a delay to ensure the tab opens
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 100);
+      
+      toast.success('Syllabus opened in new tab!');
+    } catch (error) {
+      console.error('Error downloading syllabus:', error);
+      toast.error('Error downloading syllabus');
+    }
+  };
 
   if (isLoading) {
     return (
@@ -252,15 +281,23 @@ export function CourseDetailsPage() {
         )}
       </div>
 
-      {/* Syllabus */}
-      {course.syllabus && (
+      {/* Syllabus Document */}
+      {course.syllabus_url && (
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <FileText className="h-5 w-5 text-[#003262]" />
-            <h2 className="text-xl font-semibold text-[#003262]">Syllabus</h2>
-          </div>
-          <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
-            <RichTextViewer content={course.syllabus} className="text-gray-700" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-[#003262]" />
+              <h2 className="text-xl font-semibold text-[#003262]">Syllabus</h2>
+            </div>
+            <Button
+              onClick={handleDownloadSyllabus}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              View Syllabus
+            </Button>
           </div>
         </div>
       )}
