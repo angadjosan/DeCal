@@ -59,10 +59,13 @@ jobs:
           gcloud meta list-files-for-upload | head -n 200
 
       - name: Deploy frontend service
-        run: gcloud app deploy frontend/app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
+        working-directory: frontend
+        run: gcloud app deploy app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
+
 
       - name: Deploy backend service
-        run: gcloud app deploy backend/app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
+        working-directory: backend
+        run: gcloud app deploy app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
       
       - name: Deploy dispatch
         run: gcloud app deploy dispatch.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}

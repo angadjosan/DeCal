@@ -7,11 +7,6 @@ handlers:
     static_dir: dist/assets
     secure: always
 
-  # Exclude API routes - these are handled by dispatch.yaml
-  - url: /api/.*
-    script: auto
-    secure: always
-
   # SPA fallback: all other routes -> index.html
   - url: /.*
     static_files: dist/index.html
