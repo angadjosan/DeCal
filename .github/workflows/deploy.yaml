@@ -34,10 +34,6 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Install backend dependencies
-        working-directory: backend
-        run: npm ci
-
       - name: Build frontend (Vite)
         working-directory: frontend
         run: |
@@ -47,10 +43,6 @@ jobs:
           ls -la
           ls -la dist
           find dist -maxdepth 2 -type f | head -n 50
-
-      - name: Show files gcloud will upload (frontend)
-        working-directory: frontend
-        run: |
           echo "== .gcloudignore =="
           (cat .gcloudignore || true)
           echo "== .gitignore =="
@@ -65,7 +57,7 @@ jobs:
 
       - name: Deploy backend service
         working-directory: backend
-        run: gcloud app deploy app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
+        run: npm ci && gcloud app deploy app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
       
       - name: Deploy dispatch
         run: gcloud app deploy dispatch.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
