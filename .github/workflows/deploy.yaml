@@ -49,13 +49,13 @@ jobs:
           (cat .gitignore || true)
           echo "== files to upload (first 200) =="
           gcloud meta list-files-for-upload | head -n 200
-          gcloud app deploy app.yaml --verbosity=debug --project=${{ secrets.GCP_PROJECT_ID }}
+          gcloud app deploy app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
 
 
       - name: Deploy backend service
         working-directory: backend
-        run: npm ci && gcloud app deploy app.yaml --verbosity=debug --project=${{ secrets.GCP_PROJECT_ID }}
-        
+        run: npm ci && gcloud app deploy app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
+
       - name: Deploy dispatch
-        run: gcloud app deploy dispatch.yaml --verbosity=debug --project=${{ secrets.GCP_PROJECT_ID }}
+        run: gcloud app deploy dispatch.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
         
