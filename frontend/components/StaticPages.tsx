@@ -91,6 +91,22 @@ export function StaticPages({ page }: StaticPageProps) {
                     </div>
                   </div>
                 </section>
+
+                <section>
+                  <h2 className="text-[#003262] mb-4">About This Website</h2>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                    <a href="https://www.ocf.berkeley.edu">
+                      <img 
+                        src="http://www.ocf.berkeley.edu/hosting-logos/ocf-hosted-penguin.svg"
+                        alt="Hosted by the OCF" 
+                        style={{ border: 0, width: '80px', height: 'auto' }} 
+                      />
+                    </a>
+                    <p className="text-gray-700">
+                      We are a student group acting independently of the University of California. We take full responsibility for our organization and this web site.
+                    </p>
+                  </div>
+                </section>
               </div>
             )}
 

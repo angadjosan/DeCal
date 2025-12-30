@@ -12,13 +12,14 @@ import { toast } from 'sonner';
 
 export function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSemester, setSelectedSemester] = useState('Fall 2025');
+  const [selectedSemester, setSelectedSemester] = useState('');
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [selectedUnits, setSelectedUnits] = useState<number[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [timeCommitment, setTimeCommitment] = useState([10]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [semesters, setSemesters] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,7 +35,31 @@ export function CoursesPage() {
     'Food'
   ];
 
-  const semesters = ['Fall 2025', 'Spring 2026', 'Fall 2026', 'Spring 2027'];
+  // Fetch semesters from backend API
+  useEffect(() => {
+    const fetchSemesters = async () => {
+      try {
+        const response = await fetch('/api/semesters');
+        const data = await response.json();
+        
+        if (data.success && data.semesters) {
+          const semesterList = data.semesters.map((s: any) => s.semester);
+          setSemesters(semesterList);
+          // Set the first semester as default if not already set
+          if (semesterList.length > 0 && !selectedSemester) {
+            setSelectedSemester(semesterList[0]);
+          }
+        } else {
+          toast.error('Failed to load semesters');
+        }
+      } catch (error) {
+        console.error('Error fetching semesters:', error);
+        toast.error('Failed to load semesters');
+      }
+    };
+
+    fetchSemesters();
+  }, []);
 
   // Fetch courses from backend API
   useEffect(() => {
@@ -193,9 +218,6 @@ export function CoursesPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-sm text-gray-600 mt-2">
-                  {filteredCourses.length} courses available
-                </p>
               </div>
 
               {/* Search Bar */}

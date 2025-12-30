@@ -41,22 +41,22 @@ export const clearUnapprovedCoursesCache = () => {
 };
 
 // Helper function to get current semester
-function getCurrentSemester() {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
-  
-  if (month >= 8) {
-    return `Fall ${year}`;
-  } else if (month >= 1 && month <= 5) {
-    return `Spring ${year}`;
-  } else {
-    return `Summer ${year}`;
+async function getCurrentSemester() {
+  try {
+      var semesters = await supabase.from('semesters').select('*').order('semester', { ascending: false });
+      if (semesters.data && semesters.data.length > 0) {
+        return semesters.data[0].semester;
+      } else {
+        throw new Error('No semesters found');
+      }
+  } catch (error) {
+    console.error('Error in semesters endpoint:', error);
+    throw error; // Re-throw so caller can handle it
   }
 }
 
 // Get user profile (including admin status)
-router.get('/profile', authMiddleware, async (req, res) => {
+router.get('/profile', async (req, res) => {
   try {
     const { data: profile, error } = await supabase
       .from('profiles')
@@ -83,7 +83,7 @@ router.get('/profile', authMiddleware, async (req, res) => {
   }
 });
 
-router.post('/submitCourse', authMiddleware, upload.single('cpf_file'), async (req, res) => {
+router.post('/submitCourse', upload.single('cpf_file'), async (req, res) => {
   try {
     // Parse the JSON data from the form
     const courseData = JSON.parse(req.body.data);
@@ -102,7 +102,7 @@ router.post('/submitCourse', authMiddleware, upload.single('cpf_file'), async (r
     }
 
     if (!courseData.semester) {
-      courseData.semester = getCurrentSemester();
+      courseData.semester = await getCurrentSemester();
     }
 
     // Generate unique filename
@@ -238,7 +238,7 @@ router.post('/submitCourse', authMiddleware, upload.single('cpf_file'), async (r
   }
 });
 
-router.get('/unapprovedCourses', authMiddleware, adminMiddleware, async (req, res) => {
+router.get('/unapprovedCourses', adminMiddleware, async (req, res) => {
   try {
     // Check if cache is valid
     if (isCacheValid(unapprovedCoursesCache)) {
@@ -334,7 +334,7 @@ router.get('/unapprovedCourses', authMiddleware, adminMiddleware, async (req, re
   }
 });
 
-router.post('/approveCourse', authMiddleware, adminMiddleware, async (req, res) => {
+router.post('/approveCourse', adminMiddleware, async (req, res) => {
   try {
     const { id, facilitatorEmails } = req.body;
 
@@ -381,7 +381,7 @@ router.post('/approveCourse', authMiddleware, adminMiddleware, async (req, res) 
   }
 });
 
-router.post('/rejectCourse', authMiddleware, adminMiddleware, async (req, res) => {
+router.post('/rejectCourse', adminMiddleware, async (req, res) => {
   try {
     const { id, feedback, facilitatorEmails } = req.body;
 
@@ -429,7 +429,7 @@ router.post('/rejectCourse', authMiddleware, adminMiddleware, async (req, res) =
 });
 
 // Download CPF file by course ID (admin only)
-router.get('/downloadCPF/:courseId', authMiddleware, adminMiddleware, async (req, res) => {
+router.get('/downloadCPF/:courseId', adminMiddleware, async (req, res) => {
   try {
     const { courseId } = req.params;
 

@@ -69,7 +69,7 @@ const publicRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-// Rate limiter for public endpoints
+// Rate limiter for private endpoints
 const privateRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 1000, // Limit each IP to 1000 requests per windowMs
@@ -102,6 +102,16 @@ export const clearApprovedCoursesCache = () => {
 
 app.get('/health', publicRateLimiter, (req, res) => {
   res.json({ status: 'ok', message: 'DeCal API is running' });
+});
+
+app.get('/api/semesters', publicRateLimiter, async (req, res) => {
+  try {
+      var semesters = await supabase.from('semesters').select('*').order('semester', { ascending: false });
+      res.status(200).json({ success: true, semesters: semesters.data });
+  } catch (error) {
+    console.error('Error in semesters endpoint:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
 });
 
 // Public endpoint for approved courses
@@ -253,7 +263,7 @@ app.get('/api/courses/:id', publicRateLimiter, async (req, res) => {
 });
 
 // Public endpoint for check if user is admin
-app.get('/admin/check', async (req, res) => {
+app.get('/admin/check', publicRateLimiter, async (req, res) => {
   try {
     const user = req.user;
     
@@ -278,7 +288,7 @@ app.get('/admin/check', async (req, res) => {
   }
 });
 
-app.use('/api', privateRateLimiter, routes);
+app.use('/api', privateRateLimiter, authMiddleware, routes);
 
 app.use((err, req, res, next) => {
   console.error('Error:', err);

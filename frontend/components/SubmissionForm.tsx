@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -35,30 +35,6 @@ const categories = [
   "Food",
 ];
 
-// Generate current and next semesters
-const generateSemesters = () => {
-  const semesters = [];
-  const currentYear = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
-
-  // Determine current semester
-  let startYear = currentYear;
-  let startSemester = currentMonth >= 8 ? "Fall" : "Spring";
-
-  // Generate next 4 semesters
-  for (let i = 0; i < 4; i++) {
-    semesters.push(`${startSemester} ${startYear}`);
-    if (startSemester === "Fall") {
-      startSemester = "Spring";
-      startYear++;
-    } else {
-      startSemester = "Fall";
-    }
-  }
-
-  return semesters;
-};
-
 interface SubmissionFormProps {
   session: Session | null;
 }
@@ -82,6 +58,25 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
     syllabus_text: "",
     cpf_file: null as File | null,
   });
+
+  // Fetch current semester from API
+  useEffect(() => {
+    const fetchSemester = async () => {
+      try {
+        const response = await fetch('/api/semesters');
+        if (response.ok) {
+          const result = await response.json();
+          if (result.success && result.semesters && result.semesters.length > 0) {
+            setFormData(prev => ({ ...prev, semester: result.semesters[0].semester }));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching semester:', error);
+      }
+    };
+    
+    fetchSemester();
+  }, []);
 
   const [sections, setSections] = useState<Array<{
     id: number;
@@ -373,8 +368,6 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
     }
   };
 
-  const semesters = generateSemesters();
-
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <div className="max-w-[800px] mx-auto px-6 py-12">
@@ -400,28 +393,14 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
                 </h3>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <Label htmlFor="semester">Semester *</Label>
-                  <Select
-                    value={formData.semester}
-                    onValueChange={(value) =>
-                      handleChange("semester", value)
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select semester" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {semesters.map((sem) => (
-                        <SelectItem key={sem} value={sem}>
-                          {sem}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="mb-6">
+                <Label>Semester</Label>
+                <p className="text-sm text-gray-700 mt-1">
+                  {formData.semester || "Loading..."}
+                </p>
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="units">Units *</Label>
                   <Select
