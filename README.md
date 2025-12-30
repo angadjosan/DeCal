@@ -1,5 +1,10 @@
 # DeCal
 
+update secrets in env and 
+
+echo -n "Y" | \
+  gcloud secrets create X --data-file=-
+
 ## Setup
 
 1. Install dependencies:
@@ -65,4 +70,3 @@ The backend expects the following Supabase tables:
 - `crossref_courses` - Approved courses from Google Sheets
 - `sections` - Course sections
 - `facilitators` - Course facilitators
-
