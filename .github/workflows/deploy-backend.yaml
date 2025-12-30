@@ -34,24 +34,6 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Build & deploy frontend service
-        working-directory: frontend
-        run: |
-          npm ci
-          npm run build
-          echo "== dist contents =="
-          ls -la
-          ls -la dist
-          find dist -maxdepth 2 -type f | head -n 50
-          echo "== .gcloudignore =="
-          (cat .gcloudignore || true)
-          echo "== .gitignore =="
-          (cat .gitignore || true)
-          echo "== files to upload (first 200) =="
-          gcloud meta list-files-for-upload | head -n 200
-          gcloud app deploy app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
-
-
       - name: Deploy backend service
         working-directory: backend
         run: npm ci && gcloud app deploy app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
