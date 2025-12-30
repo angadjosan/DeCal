@@ -11,8 +11,8 @@ import { createClient, Session } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { toast } from 'sonner';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = "https://iiebygxmzigupbksfgon.supabase.co";
+const supabaseAnonKey = "sb_publishable_WJYlTeDpZUJGcLlv3Tm0Qg_hIiWCX9a";
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Protected Route Component that shows toast when redirecting

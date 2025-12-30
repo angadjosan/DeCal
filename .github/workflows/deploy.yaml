@@ -49,3 +49,6 @@ jobs:
 
       - name: Deploy backend service
         run: gcloud app deploy backend/app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
+      
+      - name: Deploy dispatch
+        run: gcloud app deploy dispatch.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
