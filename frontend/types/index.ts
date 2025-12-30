@@ -74,11 +74,13 @@ export interface CourseSubmission {
 }
 
 export type Category = 
-  | 'Arts & Creativity'
-  | 'Business & Entrepreneurship'
-  | 'Health & Wellness'
-  | 'Science & Technology'
-  | 'Social Impact'
-  | 'Other';
+  | 'Publication'
+  | 'Health'
+  | 'Environment'
+  | 'Cultural'
+  | 'Political/Social'
+  | 'Media'
+  | 'Professional/Business'
+  | 'Food';
 
 export type UserRole = 'student' | 'facilitator' | 'admin';

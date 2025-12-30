@@ -8,16 +8,43 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Checkbox } from './ui/checkbox';
 import { Progress } from './ui/progress';
 import { Upload, CheckCircle2, AlertCircle, Info } from 'lucide-react';
-import { departments, semesters } from '../lib/mock-data';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 const categories = [
-  'Arts & Creativity',
-  'Business & Entrepreneurship',
-  'Health & Wellness',
-  'Science & Technology',
-  'Social Impact',
-  'Other'
+  'Publication',
+  'Health',
+  'Environment',
+  'Cultural',
+  'Political/Social',
+  'Media',
+  'Professional/Business',
+  'Food'
+];
+
+const departments = [
+  'Computer Science',
+  'English',
+  'Economics',
+  'Public Health',
+  'Sociology',
+  'Business',
+  'Art Practice',
+  'Environmental Science',
+  'Psychology',
+  'Political Science',
+  'Mathematics',
+  'Physics',
+  'Chemistry',
+  'Biology',
+  'History',
+  'Philosophy'
+];
+
+const semesters = [
+  'Fall 2025',
+  'Spring 2026',
+  'Fall 2026',
+  'Spring 2027'
 ];
 
 const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];

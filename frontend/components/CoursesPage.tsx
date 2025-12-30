@@ -7,7 +7,6 @@ import { Checkbox } from './ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Slider } from './ui/slider';
 import { Course } from '../types';
-import { mockCourses, departments, semesters } from '../lib/mock-data';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
 
@@ -35,11 +34,30 @@ export function CoursesPage() {
     'Food'
   ];
 
-  // Load courses from mock data
+  const semesters = ['Fall 2025', 'Spring 2026', 'Fall 2026', 'Spring 2027'];
+
+  // Fetch courses from backend API
   useEffect(() => {
-    setIsLoading(true);
-    setCourses(mockCourses);
-    setIsLoading(false);
+    const fetchCourses = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/approvedCourses');
+        const data = await response.json();
+        
+        if (data.success && data.courses) {
+          setCourses(data.courses);
+        } else {
+          toast.error('Failed to load courses');
+        }
+      } catch (error) {
+        console.error('Error fetching courses:', error);
+        toast.error('Failed to load courses');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCourses();
   }, []);
 
   const filteredCourses = useMemo(() => {
@@ -120,7 +138,6 @@ export function CoursesPage() {
       prev.includes(category) ? prev.filter(c => c !== category) : [...prev, category]
     );
   };
-
   const toggleUnit = (unit: number) => {
     setSelectedUnits(prev =>
       prev.includes(unit) ? prev.filter(u => u !== unit) : [...prev, unit]
