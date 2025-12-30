@@ -10,7 +10,6 @@ import { Course } from '../types';
 import { mockCourses, departments, semesters } from '../lib/mock-data';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
-import { api } from '../utils/api';
 
 export function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,40 +35,11 @@ export function CoursesPage() {
     'Food'
   ];
 
-  // Fetch courses from API
+  // Load courses from mock data
   useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        setIsLoading(true);
-        const result = await api.get<{ success: boolean; courses: Course[] }>(
-          '/api/approvedCourses',
-          undefined,
-          {
-            retries: 3,
-            showErrorToast: false, // We'll handle the toast manually for fallback
-          }
-        );
-        
-        if (result.success && result.courses) {
-          setCourses(result.courses);
-        } else {
-          // If API returns success: false, fallback to mock data
-          console.warn('API returned no courses, using mock data');
-          setCourses(mockCourses);
-        }
-      } catch (error) {
-        console.error('Error fetching courses:', error);
-        // Fallback to mock data on error with a friendly message
-        toast.error('Unable to load courses from server. Showing sample data.', {
-          duration: 4000,
-        });
-        setCourses(mockCourses);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchCourses();
+    setIsLoading(true);
+    setCourses(mockCourses);
+    setIsLoading(false);
   }, []);
 
   const filteredCourses = useMemo(() => {
