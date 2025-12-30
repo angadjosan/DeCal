@@ -34,7 +34,7 @@ jobs:
         with:
           project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-      - name: Build frontend (Vite)
+      - name: Build & deploy frontend service
         working-directory: frontend
         run: |
           npm ci
@@ -49,10 +49,7 @@ jobs:
           (cat .gitignore || true)
           echo "== files to upload (first 200) =="
           gcloud meta list-files-for-upload | head -n 200
-
-      - name: Deploy frontend service
-        working-directory: frontend
-        run: gcloud app deploy app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
+          gcloud app deploy app.yaml --verbosity=debug --project=${{ secrets.GCP_PROJECT_ID }}
 
 
       - name: Deploy backend service
