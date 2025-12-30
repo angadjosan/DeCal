@@ -43,6 +43,20 @@ jobs:
         run: |
           npm ci
           npm run build
+          echo "== dist contents =="
+          ls -la
+          ls -la dist
+          find dist -maxdepth 2 -type f | head -n 50
+
+      - name: Show files gcloud will upload (frontend)
+        working-directory: frontend
+        run: |
+          echo "== .gcloudignore =="
+          (cat .gcloudignore || true)
+          echo "== .gitignore =="
+          (cat .gitignore || true)
+          echo "== files to upload (first 200) =="
+          gcloud meta list-files-for-upload | head -n 200
 
       - name: Deploy frontend service
         run: gcloud app deploy frontend/app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
