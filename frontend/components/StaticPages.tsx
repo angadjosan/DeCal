@@ -1,6 +1,7 @@
 interface StaticPageProps {
   page: 'faq' | 'facilitate';
 }
+import ocf from '../assets/ocf-hosted-penguin.svg';
 
 export function StaticPages({ page }: StaticPageProps) {
   return (
@@ -97,7 +98,7 @@ export function StaticPages({ page }: StaticPageProps) {
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
                     <a href="https://www.ocf.berkeley.edu">
                       <img 
-                        src="http://www.ocf.berkeley.edu/hosting-logos/ocf-hosted-penguin.svg"
+                        src={ocf}
                         alt="Hosted by the OCF" 
                         style={{ border: 0, width: '80px', height: 'auto' }} 
                       />

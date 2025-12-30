@@ -9,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+import logo from '../assets/logo.png';
 
 interface NavigationProps {
   isLoggedIn?: boolean;
@@ -40,7 +41,7 @@ export function Navigation({ isLoggedIn = false, userRole, handleGoogleLogin, ha
         {/* Logo and Brand */}
         <Link to="/courses" className="flex items-center">
           <img 
-            src="/logo.png" 
+            src={logo}
             alt="DeCal @ Berkeley" 
             className="h-10"
           />
