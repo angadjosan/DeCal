@@ -4,6 +4,7 @@ service: backend
 
 env_variables:
   NODE_ENV: "production"
+  GCP_PROJECT: "decal-478508"
 
 handlers:
   - url: /.*
