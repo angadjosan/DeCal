@@ -125,17 +125,23 @@ export function CourseDetailModal({ course, isOpen, onClose }: CourseDetailModal
             </div>
           )}
 
-          {/* Syllabus */}
-          <div>
-            <h3 className="text-lg font-semibold text-[#003262] mb-3">Syllabus</h3>
-            {course.syllabus ? (
-              <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
-                <RichTextViewer content={course.syllabus} className="text-gray-700" />
-              </div>
-            ) : (
-              <p className="text-gray-500">No syllabus provided</p>
-            )}
-          </div>
+          {/* Syllabus Document */}
+          {course.syllabus_url && (
+            <div>
+              <h3 className="text-lg font-semibold text-[#003262] mb-3">Syllabus</h3>
+              <a
+                href={`/api/downloadSyllabus/${course.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline inline-flex items-center gap-1"
+              >
+                View Syllabus Document
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </a>
+            </div>
+          )}
 
           {/* Facilitators */}
           <div>

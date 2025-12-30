@@ -36,6 +36,7 @@ export interface Course {
   application_due_date?: string;
   time_to_complete?: number;
   syllabus?: string;
+  syllabus_url?: string;
   sections: CourseSection[];
   facilitators: CourseFacilitator[];
 }

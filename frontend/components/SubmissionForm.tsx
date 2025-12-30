@@ -55,8 +55,8 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
     enrollment_information: "",
     application_url: "",
     application_due_date: "",
-    syllabus_text: "",
     cpf_file: null as File | null,
+    syllabus_file: null as File | null,
   });
 
   // Fetch current semester from API
@@ -101,6 +101,10 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
 
   const handleFileUpload = (file: File | null) => {
     setFormData({ ...formData, cpf_file: file });
+  };
+
+  const handleSyllabusUpload = (file: File | null) => {
+    setFormData({ ...formData, syllabus_file: file });
   };
 
   const addSection = () => {
@@ -186,7 +190,6 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
       "description",
       "faculty_sponsor_name",
       "faculty_sponsor_email",
-      "syllabus_text",
     ];
 
     const missingFields = requiredFields.filter(
@@ -215,6 +218,26 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
     // Validate file size (max 50MB)
     if (formData.cpf_file.size > 50 * 1024 * 1024) {
       toast.error("CPF file must be less than 50MB");
+      return;
+    }
+
+    // Validate Syllabus file upload
+    if (!formData.syllabus_file) {
+      toast.error(
+        "Please upload a Syllabus PDF",
+      );
+      return;
+    }
+
+    // Validate syllabus file type
+    if (formData.syllabus_file.type !== 'application/pdf') {
+      toast.error("Syllabus file must be a PDF");
+      return;
+    }
+
+    // Validate syllabus file size (max 50MB)
+    if (formData.syllabus_file.size > 50 * 1024 * 1024) {
+      toast.error("Syllabus file must be less than 50MB");
       return;
     }
 
@@ -273,6 +296,9 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
       // Add the CPF file
       formDataToSend.append('cpf_file', formData.cpf_file);
       
+      // Add the Syllabus file
+      formDataToSend.append('syllabus_file', formData.syllabus_file);
+      
       // Add all other form data as JSON string
       const submissionData = {
         semester: formData.semester,
@@ -290,7 +316,6 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
         application_due_date: formData.application_due_date 
           ? new Date(formData.application_due_date).toISOString() 
           : null,
-        syllabus: formData.syllabus_text,
         sections: sections.map(s => ({
           enrollment_status: s.enrollmentStatus,
           day: s.day,
@@ -348,8 +373,8 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
         enrollment_information: "",
         application_url: "",
         application_due_date: "",
-        syllabus_text: "",
         cpf_file: null,
+        syllabus_file: null,
       });
       setSections([]);
       setFacilitators([]);
@@ -566,17 +591,6 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
               </div>
 
               <div>
-                <Label htmlFor="syllabus_text">
-                  Syllabus *
-                </Label>
-                <RichTextEditor
-                  content={formData.syllabus_text}
-                  onChange={(content) => handleChange("syllabus_text", content)}
-                  placeholder="Paste your syllabus here or provide a detailed course outline..."
-                />
-              </div>
-
-              <div>
                 <Label htmlFor="cpf_file">
                   Course Proposal Form (CPF) *
                 </Label>
@@ -606,6 +620,46 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
                         <Upload className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                         <p className="text-sm text-gray-600">
                           Click to upload PDF
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          PDF, max 50MB
+                        </p>
+                      </>
+                    )}
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="syllabus_file">
+                  Syllabus Document *
+                </Label>
+                <div className="mt-2 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#003262] transition-colors cursor-pointer">
+                  <input
+                    type="file"
+                    id="syllabus_file"
+                    accept=".pdf"
+                    className="hidden"
+                    onChange={(e) =>
+                      handleSyllabusUpload(
+                        e.target.files?.[0] || null,
+                      )
+                    }
+                  />
+                  <label
+                    htmlFor="syllabus_file"
+                    className="cursor-pointer"
+                  >
+                    {formData.syllabus_file ? (
+                      <div className="flex items-center justify-center gap-2 text-green-600">
+                        <CheckCircle2 className="h-5 w-5" />
+                        <span>{formData.syllabus_file.name}</span>
+                      </div>
+                    ) : (
+                      <>
+                        <FileText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                        <p className="text-sm text-gray-600">
+                          Click to upload Syllabus PDF
                         </p>
                         <p className="text-xs text-gray-400 mt-1">
                           PDF, max 50MB

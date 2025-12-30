@@ -172,6 +172,7 @@ app.get('/api/approvedCourses', publicRateLimiter, async (req, res) => {
       application_due_date: course.application_due_date,
       time_to_complete: course.time_to_complete,
       syllabus: course.syllabus,
+      syllabus_url: course.syllabus_url,
       sections: course.sections,
       facilitators: course.facilitators
     }));
@@ -248,6 +249,7 @@ app.get('/api/courses/:id', publicRateLimiter, async (req, res) => {
       application_due_date: course.application_due_date,
       time_to_complete: course.time_to_complete,
       syllabus: course.syllabus,
+      syllabus_url: course.syllabus_url,
       sections: sections || [],
       facilitators: facilitators || []
     };
@@ -285,6 +287,72 @@ app.get('/admin/check', publicRateLimiter, async (req, res) => {
   } catch (error) {
     console.error('Error checking admin status:', error);
     res.status(200).json({ isAdmin: false });
+  }
+});
+
+// Public endpoint for downloading syllabus files (no auth required)
+app.get('/api/downloadSyllabus/:courseId', publicRateLimiter, async (req, res) => {
+  try {
+    const { courseId } = req.params;
+
+    if (!courseId) {
+      return res.status(400).json({ error: 'Course ID is required' });
+    }
+
+    // Get course data to retrieve syllabus URL
+    const { data: course, error: fetchError } = await supabase
+      .from('courses')
+      .select('syllabus_url')
+      .eq('id', courseId)
+      .single();
+
+    if (fetchError || !course) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+
+    if (!course.syllabus_url) {
+      return res.status(404).json({ error: 'Syllabus file not found for this course' });
+    }
+
+    // Extract the file path from the syllabus URL
+    // Syllabus URL format: https://{project}.supabase.co/storage/v1/object/public/decal-submissions/syllabus-files/{filename}
+    const syllabusUrl = course.syllabus_url;
+    const urlParts = syllabusUrl.split('/syllabus-files/');
+    
+    if (urlParts.length < 2) {
+      return res.status(500).json({ error: 'Invalid syllabus URL format' });
+    }
+
+    const fileName = urlParts[1];
+    const filePath = `syllabus-files/${fileName}`;
+
+    // Download file from Supabase Storage
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from('decal-submissions')
+      .download(filePath);
+
+    if (downloadError) {
+      console.error('Syllabus file download error:', downloadError);
+      return res.status(500).json({ 
+        error: 'Failed to download syllabus file', 
+        details: downloadError.message 
+      });
+    }
+
+    // Convert blob to buffer
+    const buffer = Buffer.from(await fileData.arrayBuffer());
+
+    // Set appropriate headers for file download
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+    res.setHeader('Content-Length', buffer.length);
+
+    // Send the file
+    res.send(buffer);
+
+  } catch (error) {
+    console.error('Error in downloadSyllabus endpoint:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 

@@ -22,6 +22,12 @@ const upload = multer({
   }
 });
 
+// Configure multer to accept multiple files
+const uploadFields = upload.fields([
+  { name: 'cpf_file', maxCount: 1 },
+  { name: 'syllabus_file', maxCount: 1 }
+]);
+
 // Cache for unapproved courses
 let unapprovedCoursesCache = {
   data: null,
@@ -83,15 +89,22 @@ router.get('/profile', async (req, res) => {
   }
 });
 
-router.post('/submitCourse', upload.single('cpf_file'), async (req, res) => {
+router.post('/submitCourse', uploadFields, async (req, res) => {
   try {
     // Parse the JSON data from the form
     const courseData = JSON.parse(req.body.data);
-    const cpfFile = req.file;
+    const cpfFile = req.files?.cpf_file?.[0];
+    const syllabusFile = req.files?.syllabus_file?.[0];
 
     if (!cpfFile) {
       return res.status(400).json({ 
         error: 'CPF file is required' 
+      });
+    }
+
+    if (!syllabusFile) {
+      return res.status(400).json({ 
+        error: 'Syllabus file is required' 
       });
     }
 
@@ -136,23 +149,59 @@ router.post('/submitCourse', upload.single('cpf_file'), async (req, res) => {
       .from('decal-submissions')
       .getPublicUrl(filePath);
 
+    // Upload syllabus file to Supabase Storage
+    const syllabusTimestamp = Date.now();
+    const syllabusSanitizedTitle = courseData.title
+      .replace(/[^a-z0-9]/gi, '_')
+      .toLowerCase()
+      .substring(0, 50);
+    const syllabusFileName = `${syllabusTimestamp}_${syllabusSanitizedTitle}_syllabus.pdf`;
+    const syllabusFilePath = `syllabus-files/${syllabusFileName}`;
+
+    const { data: syllabusUploadData, error: syllabusUploadError } = await supabase.storage
+      .from('decal-submissions')
+      .upload(syllabusFilePath, syllabusFile.buffer, {
+        contentType: 'application/pdf',
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (syllabusUploadError) {
+      // If syllabus upload fails, delete the CPF file
+      await supabase.storage
+        .from('decal-submissions')
+        .remove([filePath]);
+      
+      console.error('Syllabus file upload error:', syllabusUploadError);
+      return res.status(500).json({ 
+        error: 'Failed to upload Syllabus file', 
+        details: syllabusUploadError.message 
+      });
+    }
+
+    // Get public URL for the syllabus file
+    const { data: syllabusUrlData } = supabase.storage
+      .from('decal-submissions')
+      .getPublicUrl(syllabusFilePath);
+
     // Extract sections and facilitators before creating course
     const { sections, facilitators, facilitatorEmails, ...coreFields } = courseData;
 
-    // Add file URL to course data
+    // Add file URLs to course data
     const courseObj = {
       ...coreFields,
-      cpf: urlData.publicUrl
+      cpf: urlData.publicUrl,
+      syllabus_url: syllabusUrlData.publicUrl
     };
 
     // Create course in database
     const { data, error } = await courseService.create(courseObj);
 
     if (error) {
-      // If database insert fails, delete the uploaded file
+      // If database insert fails, delete the uploaded files
       await supabase.storage
         .from('decal-submissions')
-        .remove([filePath]);
+        .remove([filePath, syllabusFilePath]);
       
       console.error('Error creating course:', error);
       return res.status(500).json({ 
@@ -314,6 +363,7 @@ router.get('/unapprovedCourses', adminMiddleware, async (req, res) => {
       crossValidation: course.crossValidation,
       cpf: course.cpf,
       syllabus: course.syllabus,
+      syllabus_url: course.syllabus_url,
       sections: course.sections,
       facilitators: course.facilitators,
       created_at: course.created_at

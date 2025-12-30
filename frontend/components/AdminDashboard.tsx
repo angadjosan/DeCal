@@ -59,6 +59,7 @@ interface UnapprovedCourse {
   };
   cpf?: string;
   syllabus?: string;
+  syllabus_url?: string;
   sections: CourseSection[];
   facilitators: CourseFacilitator[];
   created_at: string;
@@ -403,6 +404,35 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
     } catch (error) {
       console.error('Error opening CPF:', error);
       toast.error('Error opening CPF');
+    }
+  };
+
+  const handleOpenSyllabus = async (courseId: number) => {
+    try {
+      const response = await fetch(`/api/downloadSyllabus/${courseId}`, {
+        method: 'GET'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to open syllabus');
+        return;
+      }
+
+      // Convert response to blob and open in new tab
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      
+      // Cleanup after a delay to ensure the tab opens
+      setTimeout(() => {
+        window.URL.revokeObjectURL(url);
+      }, 100);
+      
+      toast.success('Syllabus opened in new tab!');
+    } catch (error) {
+      console.error('Error opening syllabus:', error);
+      toast.error('Error opening syllabus');
     }
   };
 
@@ -753,34 +783,43 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                   </div>
                 )}
 
-                {/* Syllabus */}
-                <div>
-                  <h3 className="text-lg font-semibold text-[#003262] mb-3">Syllabus</h3>
-                  {selectedSubmission.syllabus ? (
-                    <div className="border border-gray-300 rounded-lg p-4 bg-gray-50 max-h-96 overflow-y-auto">
-                      <RichTextViewer content={selectedSubmission.syllabus} className="text-gray-700" />
-                    </div>
-                  ) : (
-                    <p className="text-gray-500">No syllabus provided</p>
-                  )}
-                </div>
+                {/* Documents */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* CPF */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#003262] mb-3">CPF</h3>
+                    {selectedSubmission.cpf ? (
+                      <p className="text-gray-700">
+                        <button
+                          onClick={() => handleOpenCPF(selectedSubmission.id)}
+                          className="text-blue-600 hover:underline inline-flex items-center gap-1"
+                        >
+                          View CPF Document
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      </p>
+                    ) : (
+                      <p className="text-gray-500">No CPF uploaded</p>
+                    )}
+                  </div>
 
-                {/* CPF */}
-                <div>
-                  <h3 className="text-lg font-semibold text-[#003262] mb-3">CPF</h3>
-                  {selectedSubmission.cpf ? (
-                    <p className="text-gray-700">
-                      <button
-                        onClick={() => handleOpenCPF(selectedSubmission.id)}
-                        className="text-blue-600 hover:underline inline-flex items-center gap-1"
-                      >
-                        View CPF Document
-                        <Eye className="h-4 w-4" />
-                      </button>
-                    </p>
-                  ) : (
-                    <p className="text-gray-500">No CPF uploaded</p>
-                  )}
+                  {/* Syllabus Document */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#003262] mb-3">Syllabus Document</h3>
+                    {selectedSubmission.syllabus_url ? (
+                      <p className="text-gray-700">
+                        <button
+                          onClick={() => handleOpenSyllabus(selectedSubmission.id)}
+                          className="text-blue-600 hover:underline inline-flex items-center gap-1"
+                        >
+                          View Syllabus Document
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      </p>
+                    ) : (
+                      <p className="text-gray-500">No syllabus document uploaded</p>
+                    )}
+                  </div>
                 </div>
 
                 {/* Facilitators */}
