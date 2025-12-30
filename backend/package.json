@@ -11,6 +11,7 @@
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
   },
   "dependencies": {
+    "@google-cloud/secret-manager": "^6.1.1",
     "@supabase/supabase-js": "^2.39.0",
     "cors": "^2.8.5",
     "dompurify": "^3.3.0",

@@ -3,11 +3,54 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import { createClient } from '@supabase/supabase-js';
+import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import routes from './routes/routes.js';
 import { authMiddleware } from './middleware/auth.js';
 import { courseService } from './services/dbService.js';
 
 dotenv.config();
+
+// Secret Manager helper functions
+const sm = new SecretManagerServiceClient();
+
+async function accessSecret(projectId, name, version = 'latest') {
+  const [res] = await sm.accessSecretVersion({
+    name: `projects/${projectId}/secrets/${name}/versions/${version}`,
+  });
+  return res.payload.data.toString('utf8');
+}
+
+async function loadSecrets() {
+  // Only load from Secret Manager in production
+  if (process.env.NODE_ENV !== 'production') {
+    return;
+  }
+
+  // On App Engine, these are available automatically:
+  const projectId = process.env.GCP_PROJECT;
+
+  if (!projectId) {
+    console.warn('Warning: GCP_PROJECT not set, skipping Secret Manager loading');
+    return;
+  }
+
+  // Load once at startup (cache in memory):
+  if (!process.env.SUPABASE_URL || process.env.SUPABASE_URL.startsWith('${')) {
+    process.env.SUPABASE_URL = await accessSecret(projectId, 'SUPABASE_URL');
+  }
+  if (
+    !process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY.startsWith('${')
+  ) {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = await accessSecret(
+      projectId,
+      'SUPABASE_SERVICE_ROLE_KEY'
+    );
+  }
+}
+
+// Load secrets before creating Supabase client
+await loadSecrets();
 
 const app = express();
 app.set("trust proxy", 1);

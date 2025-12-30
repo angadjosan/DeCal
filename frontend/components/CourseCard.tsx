@@ -37,6 +37,7 @@ export function CourseCard({ course, onViewDetails }: CourseCardProps) {
 
   // Get first section's enrollment status
   const firstSection = course.sections?.[0];
+  const sections = course.sections || [];
 
   return (
     <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-lg transition-shadow flex flex-col h-full">
@@ -58,16 +59,16 @@ export function CourseCard({ course, onViewDetails }: CourseCardProps) {
         </p>
 
         <div className="mb-3">
-          {course.sections.length > 0 && (
+          {sections.length > 0 && (
             <p className="text-sm font-medium text-gray-700 mb-2">Sections</p>
           )}
           <div className="flex items-start gap-3 flex-wrap">
             {/* Sections */}
-            {course.sections.length > 0 && (
+            {sections.length > 0 && (
               <div className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
                 <div className="flex flex-wrap gap-1">
-                  {course.sections.slice(0, 1).map((section, index) => (
+                  {sections.slice(0, 1).map((section, index) => (
                     <Badge 
                       key={index} 
                       variant="outline" 
@@ -76,12 +77,12 @@ export function CourseCard({ course, onViewDetails }: CourseCardProps) {
                       {section.day} {section.time}
                     </Badge>
                   ))}
-                  {course.sections.length > 1 && (
+                  {sections.length > 1 && (
                     <Badge 
                       variant="outline" 
                       className="text-xs font-normal bg-gray-100 text-gray-600 border-gray-300"
                     >
-                      +{course.sections.length - 1} more
+                      +{sections.length - 1} more
                     </Badge>
                   )}
                 </div>
@@ -89,11 +90,11 @@ export function CourseCard({ course, onViewDetails }: CourseCardProps) {
             )}
 
             {/* Locations */}
-            {course.sections.length > 0 && (
+            {sections.length > 0 && (
               <div className="flex items-center gap-1 ml-2">
                 <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
                 <div className="flex flex-wrap gap-1">
-                  {[...new Set(course.sections.map(s => s.room))].slice(0, 3).map((room, index) => (
+                  {[...new Set(sections.map(s => s.room))].slice(0, 3).map((room, index) => (
                     <Badge 
                       key={index} 
                       variant="outline" 
@@ -102,12 +103,12 @@ export function CourseCard({ course, onViewDetails }: CourseCardProps) {
                       {room}
                     </Badge>
                   ))}
-                  {new Set(course.sections.map(s => s.room)).size > 3 && (
+                  {new Set(sections.map(s => s.room)).size > 3 && (
                     <Badge 
                       variant="outline" 
                       className="text-xs font-normal bg-gray-100 text-gray-600 border-gray-300"
                     >
-                      +{new Set(course.sections.map(s => s.room)).size - 3} more
+                      +{new Set(sections.map(s => s.room)).size - 3} more
                     </Badge>
                   )}
                 </div>
