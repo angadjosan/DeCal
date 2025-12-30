@@ -10,6 +10,7 @@ import { Course } from '../types';
 import { mockCourses, departments, semesters } from '../lib/mock-data';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
+import { api } from '../utils/api';
 
 export function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -40,22 +41,28 @@ export function CoursesPage() {
     const fetchCourses = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/approvedCourses');
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch courses');
-        }
-
-        const result = await response.json();
+        const result = await api.get<{ success: boolean; courses: Course[] }>(
+          '/api/approvedCourses',
+          undefined,
+          {
+            retries: 3,
+            showErrorToast: false, // We'll handle the toast manually for fallback
+          }
+        );
         
         if (result.success && result.courses) {
-          // API data already matches Course interface
           setCourses(result.courses);
+        } else {
+          // If API returns success: false, fallback to mock data
+          console.warn('API returned no courses, using mock data');
+          setCourses(mockCourses);
         }
       } catch (error) {
         console.error('Error fetching courses:', error);
-        toast.error('Failed to load courses. Please try again later.');
-        // Fallback to mock data on error
+        // Fallback to mock data on error with a friendly message
+        toast.error('Unable to load courses from server. Showing sample data.', {
+          duration: 4000,
+        });
         setCourses(mockCourses);
       } finally {
         setIsLoading(false);
