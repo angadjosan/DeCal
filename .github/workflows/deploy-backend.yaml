@@ -1,0 +1,61 @@
+name: Deploy backend
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: gha-deployer@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Build & deploy frontend service
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          echo "== dist contents =="
+          ls -la
+          ls -la dist
+          find dist -maxdepth 2 -type f | head -n 50
+          echo "== .gcloudignore =="
+          (cat .gcloudignore || true)
+          echo "== .gitignore =="
+          (cat .gitignore || true)
+          echo "== files to upload (first 200) =="
+          gcloud meta list-files-for-upload | head -n 200
+          gcloud app deploy app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
+
+
+      - name: Deploy backend service
+        working-directory: backend
+        run: npm ci && gcloud app deploy app.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
+
+      - name: Deploy dispatch
+        run: gcloud app deploy dispatch.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
+        
