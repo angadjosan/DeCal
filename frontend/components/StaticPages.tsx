@@ -176,7 +176,7 @@ export function StaticPages({ page }: StaticPageProps) {
                     <li><strong>Campus Department:</strong> The department which your course belongs to</li>
                     <li><strong>Course Title:</strong> Name of your course</li>
                     <li><strong>Course Number:</strong> Whether you are offering your course as an upper or lower division course (a 98 or a 198 course, or both)</li>
-                    <li><strong>Number of Units:</strong> Units for the course, usually 1-2 units for each DeCal Course (can offer both 1 and 2 units and let students decide the number of units they want)</li>
+                    <li><strong>Number of Units:</strong> Units for the course, usually 1-3 units for each DeCal Course (can offer both 1 and 2 units and let students decide the number of units they want)</li>
                     <li><strong>Student Facilitator Name(s):</strong> Your (and your co-facilitator's) name</li>
                     <li><strong>Student Facilitator Email Address(es):</strong> You (and your co-facilitator's) email address</li>
                     <li><strong>Instructor of Record Name:</strong> Your faculty sponsor's name. A faculty sponsor has to be a lecturer or a faculty member who is authorized to create and manage a class within the university (GSIs don't count, sorry) and is responsible for all the requirements on the faculty checklist. Your faculty sponsor can be a valuable source to you- they have already created and taught courses!</li>

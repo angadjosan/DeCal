@@ -273,7 +273,7 @@ export function CoursesPage() {
                 <div>
                   <h4 className="mb-3 text-gray-900">Units</h4>
                   <div className="space-y-2">
-                    {[1, 2].map(unit => (
+                    {[1, 2, 3].map(unit => (
                       <div key={unit} className="flex items-center gap-2">
                         <Checkbox
                           id={`unit-${unit}`}

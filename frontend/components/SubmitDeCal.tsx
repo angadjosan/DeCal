@@ -233,6 +233,10 @@ export function SubmitDeCal() {
                       <Label htmlFor="unit2">2 units</Label>
                     </div>
                     <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="3" id="unit3" />
+                      <Label htmlFor="unit3">3 units</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
                       <RadioGroupItem value="pnp" id="pnp" />
                       <Label htmlFor="pnp">P/NP only</Label>
                     </div>

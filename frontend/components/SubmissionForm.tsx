@@ -440,6 +440,7 @@ export function SubmissionForm({ session }: SubmissionFormProps) {
                     <SelectContent>
                       <SelectItem value="1">1 unit</SelectItem>
                       <SelectItem value="2">2 units</SelectItem>
+                      <SelectItem value="3">3 units</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
