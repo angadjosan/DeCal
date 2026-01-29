@@ -88,11 +88,19 @@ export function MyCoursesPage({ session }: MyCoursesPageProps) {
   return (
     <div className="min-h-screen bg-gray-50 pt-16">
       <div className="max-w-[1200px] mx-auto px-6 py-8">
-        <div className="mb-8">
-          <h1 className="text-[#003262] mb-2">My Courses</h1>
-          <p className="text-gray-600">
-            View and manage all the DeCal courses you've submitted
-          </p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-[#003262] mb-2">My Courses</h1>
+            <p className="text-gray-600">
+              View and manage all the DeCal courses you've submitted
+            </p>
+          </div>
+          <Button
+            onClick={() => navigate('/submit')}
+            className="bg-[#003262] hover:bg-[#003262]/90"
+          >
+            Submit a DeCal
+          </Button>
         </div>
 
         {courses.length === 0 ? (
