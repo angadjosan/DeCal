@@ -82,15 +82,17 @@ export function Navigation({ isLoggedIn = false, userRole, handleGoogleLogin, ha
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Submit a DeCal Link */}
-          <Link
-            to="/submit"
-            className={`text-white/80 hover:text-white transition-colors ${
-              location.pathname === '/submit' ? 'text-white' : ''
-            }`}
-          >
-            Submit a DeCal
-          </Link>
+          {/* Submit a DeCal Link - Only visible when logged in */}
+          {isLoggedIn && (
+            <Link
+              to="/my-courses"
+              className={`text-white/80 hover:text-white transition-colors ${
+                location.pathname === '/my-courses' ? 'text-white' : ''
+              }`}
+            >
+              Submit a DeCal
+            </Link>
+          )}
 
           {/* Admin Dashboard Link - Only visible to admins */}
           {userRole === 'admin' && (
@@ -197,16 +199,18 @@ export function Navigation({ isLoggedIn = false, userRole, handleGoogleLogin, ha
                   </CollapsibleContent>
                 </Collapsible>
 
-                {/* Submit a DeCal in Mobile */}
-                <Link
-                  to="/submit"
-                  onClick={handleMobileMenuClose}
-                  className={`text-left p-2 rounded-lg hover:bg-gray-100 w-full block mb-2 ${
-                    location.pathname === '/submit' ? 'bg-gray-100 text-[#003262]' : 'text-gray-700'
-                  }`}
-                >
-                  Submit a DeCal
-                </Link>
+                {/* Submit a DeCal in Mobile - Only visible when logged in */}
+                {isLoggedIn && (
+                  <Link
+                    to="/my-courses"
+                    onClick={handleMobileMenuClose}
+                    className={`text-left p-2 rounded-lg hover:bg-gray-100 w-full block mb-2 ${
+                      location.pathname === '/my-courses' ? 'bg-gray-100 text-[#003262]' : 'text-gray-700'
+                    }`}
+                  >
+                    Submit a DeCal
+                  </Link>
+                )}
 
                 {/* Admin Dashboard in Mobile - Only visible to admins */}
                 {userRole === 'admin' && (

@@ -540,4 +540,361 @@ router.get('/downloadCPF/:courseId', adminMiddleware, async (req, res) => {
   }
 });
 
+// Helper function to check if user can edit course (owner or admin)
+async function canEditCourse(user, course) {
+  // Check if user is admin
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single();
+  
+  if (profile?.is_admin) {
+    return true;
+  }
+  
+  // Check if user's email matches course contact_email
+  return user.email?.toLowerCase() === course.contact_email?.toLowerCase();
+}
+
+// Update course endpoint (owner or admin only)
+router.put('/updateCourse/:id', uploadFields, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({ error: 'Course ID is required' });
+    }
+
+    // Fetch the course to check permissions
+    const { data: course, error: fetchError } = await courseService.getById(id);
+
+    if (fetchError || !course) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+
+    // Check if user can edit this course
+    const hasPermission = await canEditCourse(req.user, course);
+    if (!hasPermission) {
+      return res.status(403).json({ error: 'You do not have permission to edit this course' });
+    }
+
+    // Parse the JSON data from the form
+    const courseData = JSON.parse(req.body.data);
+    const cpfFile = req.files?.cpf_file?.[0];
+    const syllabusFile = req.files?.syllabus_file?.[0];
+
+    // Extract sections and facilitators before updating course
+    const { sections, facilitators, facilitatorEmails, ...coreFields } = courseData;
+
+    // Handle file uploads if provided (optional - keep existing if not provided)
+    let cpfUrl = course.cpf;
+    let syllabusUrl = course.syllabus_url;
+
+    if (cpfFile) {
+      // Delete old CPF file if exists
+      if (course.cpf) {
+        const oldCpfUrl = course.cpf;
+        const urlParts = oldCpfUrl.split('/cpf-forms/');
+        if (urlParts.length >= 2) {
+          const oldFilePath = `cpf-forms/${urlParts[1]}`;
+          await supabase.storage.from('decal-submissions').remove([oldFilePath]);
+        }
+      }
+
+      // Upload new CPF file
+      const timestamp = Date.now();
+      const sanitizedTitle = (courseData.title || course.title)
+        .replace(/[^a-z0-9]/gi, '_')
+        .toLowerCase()
+        .substring(0, 50);
+      const fileName = `${timestamp}_${sanitizedTitle}.pdf`;
+      const filePath = `cpf-forms/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('decal-submissions')
+        .upload(filePath, cpfFile.buffer, {
+          contentType: 'application/pdf',
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('CPF file upload error:', uploadError);
+        return res.status(500).json({ 
+          error: 'Failed to upload CPF file', 
+          details: uploadError.message 
+        });
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('decal-submissions')
+        .getPublicUrl(filePath);
+      cpfUrl = urlData.publicUrl;
+    }
+
+    if (syllabusFile) {
+      // Delete old syllabus file if exists
+      if (course.syllabus_url) {
+        const oldSyllabusUrl = course.syllabus_url;
+        const urlParts = oldSyllabusUrl.split('/syllabus-files/');
+        if (urlParts.length >= 2) {
+          const oldFilePath = `syllabus-files/${urlParts[1]}`;
+          await supabase.storage.from('decal-submissions').remove([oldFilePath]);
+        }
+      }
+
+      // Upload new syllabus file
+      const timestamp = Date.now();
+      const sanitizedTitle = (courseData.title || course.title)
+        .replace(/[^a-z0-9]/gi, '_')
+        .toLowerCase()
+        .substring(0, 50);
+      const fileName = `${timestamp}_${sanitizedTitle}_syllabus.pdf`;
+      const filePath = `syllabus-files/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('decal-submissions')
+        .upload(filePath, syllabusFile.buffer, {
+          contentType: 'application/pdf',
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error('Syllabus file upload error:', uploadError);
+        return res.status(500).json({ 
+          error: 'Failed to upload Syllabus file', 
+          details: uploadError.message 
+        });
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('decal-submissions')
+        .getPublicUrl(filePath);
+      syllabusUrl = urlData.publicUrl;
+    }
+
+    // Prepare update data
+    const updateData = {
+      ...coreFields,
+      cpf: cpfUrl,
+      syllabus_url: syllabusUrl
+    };
+
+    // Remove undefined/null values to avoid overwriting with null
+    Object.keys(updateData).forEach(key => {
+      if (updateData[key] === undefined || updateData[key] === null) {
+        delete updateData[key];
+      }
+    });
+
+    // Update course in database
+    const { data: updatedCourse, error: updateError } = await courseService.update(id, updateData);
+
+    if (updateError) {
+      console.error('Error updating course:', updateError);
+      return res.status(500).json({ 
+        error: 'Failed to update course', 
+        details: updateError.message 
+      });
+    }
+
+    // Update sections: delete old ones and insert new ones
+    if (sections !== undefined) {
+      // Delete existing sections
+      const { error: deleteSectionsError } = await supabase
+        .from('course_sections')
+        .delete()
+        .eq('course_id', id);
+
+      if (deleteSectionsError) {
+        console.error('Error deleting sections:', deleteSectionsError);
+      }
+
+      // Insert new sections if provided
+      if (sections && sections.length > 0) {
+        const sectionsToInsert = sections.map(section => ({
+          course_id: id,
+          section_type: section.section_type || 'Lecture',
+          enrollment_status: section.enrollment_status,
+          day: section.day,
+          time: section.time,
+          room: section.room,
+          capacity: section.capacity || null,
+          start_date: section.start_date || null,
+          ccn_ld: section.ccn_ld || null,
+          ccn_ud: section.ccn_ud || null,
+          notes: section.notes || null
+        }));
+
+        const { error: sectionsError } = await supabase
+          .from('course_sections')
+          .insert(sectionsToInsert);
+
+        if (sectionsError) {
+          console.error('Error inserting sections:', sectionsError);
+        }
+      }
+    }
+
+    // Update facilitators: delete old ones and insert new ones
+    if (facilitators !== undefined) {
+      // Delete existing facilitators
+      const { error: deleteFacilitatorsError } = await supabase
+        .from('course_facilitators')
+        .delete()
+        .eq('course_id', id);
+
+      if (deleteFacilitatorsError) {
+        console.error('Error deleting facilitators:', deleteFacilitatorsError);
+      }
+
+      // Insert new facilitators if provided
+      if (facilitators && facilitators.length > 0) {
+        const facilitatorsToInsert = facilitators.map(facilitator => ({
+          course_id: id,
+          name: facilitator.name,
+          email: facilitator.email
+        }));
+
+        const { error: facilitatorsError } = await supabase
+          .from('course_facilitators')
+          .insert(facilitatorsToInsert);
+
+        if (facilitatorsError) {
+          console.error('Error inserting facilitators:', facilitatorsError);
+        }
+      }
+    }
+
+    // Clear caches since data has changed
+    clearUnapprovedCoursesCache();
+
+    // Perform cross-validation if faculty sponsor email changed
+    if (updateData.faculty_sponsor_email) {
+      const validation = await crossValidateCourse(
+        updateData.faculty_sponsor_email,
+        updatedCourse.semester || course.semester
+      );
+
+      if (validation.success) {
+        await courseService.update(id, {
+          cross_reference_success: validation.match
+        });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Course updated successfully',
+      course: updatedCourse
+    });
+  } catch (error) {
+    console.error('Course update error:', error);
+    
+    // Handle multer errors
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'File size exceeds 50MB limit' });
+    }
+    
+    res.status(500).json({ 
+      error: 'Internal server error', 
+      details: error.message 
+    });
+  }
+});
+
+// Get course for editing (owner or admin only)
+router.get('/courseForEdit/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({ error: 'Course ID is required' });
+    }
+
+    // Fetch the course
+    const { data: course, error: fetchError } = await courseService.getById(id);
+
+    if (fetchError || !course) {
+      return res.status(404).json({ error: 'Course not found' });
+    }
+
+    // Check if user can edit this course
+    const hasPermission = await canEditCourse(req.user, course);
+    if (!hasPermission) {
+      return res.status(403).json({ error: 'You do not have permission to edit this course' });
+    }
+
+    // Fetch sections for this course
+    const { data: sections } = await supabase
+      .from('course_sections')
+      .select('*')
+      .eq('course_id', course.id);
+
+    // Fetch facilitators for this course
+    const { data: facilitators } = await supabase
+      .from('course_facilitators')
+      .select('*')
+      .eq('course_id', course.id);
+
+    res.status(200).json({
+      success: true,
+      course: {
+        ...course,
+        sections: sections || [],
+        facilitators: facilitators || []
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching course for edit:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
+// Get courses by owner (user's courses)
+router.get('/myCourses', async (req, res) => {
+  try {
+    const userEmail = req.user.email;
+
+    if (!userEmail) {
+      return res.status(400).json({ error: 'User email not found' });
+    }
+
+    // Fetch all courses where contact_email matches user's email
+    const { data: courses, error } = await supabase
+      .from('courses')
+      .select('*')
+      .eq('contact_email', userEmail)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching user courses:', error);
+      return res.status(500).json({ error: 'Failed to fetch courses', details: error.message });
+    }
+
+    // Sanitize response - only return necessary fields
+    const sanitizedCourses = (courses || []).map(course => ({
+      id: course.id,
+      semester: course.semester,
+      status: course.status,
+      title: course.title,
+      department: course.department,
+      category: course.category,
+      units: course.units,
+      contact_email: course.contact_email,
+      created_at: course.created_at
+    }));
+
+    res.status(200).json({
+      success: true,
+      courses: sanitizedCourses
+    });
+  } catch (error) {
+    console.error('Error in myCourses endpoint:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
 export default router;

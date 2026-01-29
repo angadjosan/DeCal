@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
@@ -8,7 +9,7 @@ import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Input } from './ui/input';
 import { Checkbox } from './ui/checkbox';
-import { CheckCircle2, XCircle, AlertCircle, Eye, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, Download } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, Eye, Loader2, Search, ArrowUpDown, ArrowUp, ArrowDown, Download, Edit } from 'lucide-react';
 import { Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 import { RichTextViewer } from './ui/rich-text-editor';
@@ -73,6 +74,7 @@ type SortField = 'title' | 'department' | 'semester' | 'contact_email' | 'status
 type SortDirection = 'asc' | 'desc' | null;
 
 export function AdminDashboard({ session }: AdminDashboardProps) {
+  const navigate = useNavigate();
   const [submissions, setSubmissions] = useState<UnapprovedCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSubmission, setSelectedSubmission] = useState<UnapprovedCourse | null>(null);
@@ -601,13 +603,24 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
                           })}
                         </TableCell>
                         <TableCell>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleReview(submission)}
-                          >
-                            {submission.status === 'Pending' ? 'Review' : 'View'}
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleReview(submission)}
+                            >
+                              {submission.status === 'Pending' ? 'Review' : 'View'}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => navigate(`/edit/${submission.id}`)}
+                              className="flex items-center gap-1"
+                            >
+                              <Edit className="h-3 w-3" />
+                              Edit
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -623,11 +636,25 @@ export function AdminDashboard({ session }: AdminDashboardProps) {
           <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             {selectedSubmission && (
               <div className="space-y-6">
-                <div>
-                  <h2 className="text-[#003262] mb-2">{selectedSubmission.title}</h2>
-                  <p className="text-gray-600">
-                    {selectedSubmission.semester} | {selectedSubmission.department}
-                  </p>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h2 className="text-[#003262] mb-2">{selectedSubmission.title}</h2>
+                    <p className="text-gray-600">
+                      {selectedSubmission.semester} | {selectedSubmission.department}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsReviewModalOpen(false);
+                      navigate(`/edit/${selectedSubmission.id}`);
+                    }}
+                    className="flex items-center gap-2"
+                  >
+                    <Edit className="h-4 w-4" />
+                    Edit Course
+                  </Button>
                 </div>
 
                 {/* Admin Actions - Moved to Top */}

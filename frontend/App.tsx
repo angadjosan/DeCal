@@ -3,6 +3,9 @@ import { Navigation } from './components/Navigation';
 import { CoursesPage } from './components/CoursesPage';
 import { SubmissionForm } from './components/SubmissionForm';
 import { AdminDashboard } from './components/AdminDashboard';
+import { CourseDetailsPage } from './components/CourseDetailsPage';
+import { EditCoursePage } from './components/EditCoursePage';
+import { MyCoursesPage } from './components/MyCoursesPage';
 import { StaticPages } from './components/StaticPages';
 import { NotFound } from './components/NotFound';
 import { Toaster } from './components/ui/sonner';
@@ -154,9 +157,20 @@ export default function App() {
       <Routes>
         <Route path="/" element={<CoursesPage />} />
         <Route path="/courses" element={<CoursesPage />} />
+        <Route path="/courses/:id" element={<CourseDetailsPage />} />
         <Route path="/submit" element={
           <ProtectedRoute isLoggedIn={isLoggedIn} loading={loading}>
             <SubmissionForm session={session} />
+          </ProtectedRoute>
+        } />
+        <Route path="/edit/:id" element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} loading={loading}>
+            <EditCoursePage session={session} />
+          </ProtectedRoute>
+        } />
+        <Route path="/my-courses" element={
+          <ProtectedRoute isLoggedIn={isLoggedIn} loading={loading}>
+            <MyCoursesPage session={session} />
           </ProtectedRoute>
         } />
         <Route path="/admin" element={

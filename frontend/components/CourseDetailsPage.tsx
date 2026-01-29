@@ -1,11 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Users, Calendar, MapPin, ExternalLink, FileText, ArrowLeft, Download } from 'lucide-react';
+import { Users, Calendar, MapPin, ExternalLink, FileText, ArrowLeft, Download, Edit } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Course } from '../types';
 import { toast } from 'sonner';
 import { RichTextViewer } from './ui/rich-text-editor';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = "https://iiebygxmzigupbksfgon.supabase.co";
+const supabaseAnonKey = "sb_publishable_WJYlTeDpZUJGcLlv3Tm0Qg_hIiWCX9a";
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export function CourseDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -13,6 +18,7 @@ export function CourseDetailsPage() {
   const [course, setCourse] = useState<Course | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [canEdit, setCanEdit] = useState(false);
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -40,6 +46,27 @@ export function CourseDetailsPage() {
         
         if (result.success && result.course) {
           setCourse(result.course);
+          
+          // Check if user can edit this course
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            try {
+              const profileResponse = await fetch('/api/profile', {
+                headers: {
+                  'Authorization': `Bearer ${session.access_token}`
+                }
+              });
+              
+              if (profileResponse.ok) {
+                const profileData = await profileResponse.json();
+                const isAdmin = profileData.profile?.is_admin || false;
+                const isOwner = session.user.email?.toLowerCase() === result.course.contact_email?.toLowerCase();
+                setCanEdit(isAdmin || isOwner);
+              }
+            } catch (err) {
+              console.error('Error checking edit permissions:', err);
+            }
+          }
         } else {
           setError('Course not found');
         }
@@ -148,10 +175,21 @@ export function CourseDetailsPage() {
 
       {/* Header */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="mb-4">
+        <div className="flex justify-between items-start mb-4">
           <Badge className={getCategoryColor(course.category)}>
             {course.category}
           </Badge>
+          {canEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/edit/${id}`)}
+              className="flex items-center gap-2"
+            >
+              <Edit className="h-4 w-4" />
+              Edit Course
+            </Button>
+          )}
         </div>
         
         <h1 className="text-3xl font-bold text-[#003262] mb-2">{course.title}</h1>
