@@ -12,5 +12,8 @@ handlers:
     script: auto
 
 automatic_scaling:
-  min_instances: 0
+  # Kept warm: with min_instances at 0 the first request after an idle period
+  # paid a cold start (Node boot + Secret Manager fetch + Supabase client init),
+  # and the in-process course cache was thrown away on every scale-to-zero.
+  min_instances: 1
   max_instances: 5

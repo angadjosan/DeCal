@@ -1,0 +1,12 @@
+# App Engine cron. Deployed by .github/workflows/deploy-backend.yaml.
+#
+# Without this file the semester logic in cron/semesters.js never ran, which is
+# why the semesters table sat on a single Spring 2026 row from December 2025.
+cron:
+  - description: "Ensure the upcoming semester row exists in the semesters table"
+    url: /api/tasks/ensureSemester
+    # Runs monthly. The handler is idempotent and self-healing, so a missed run
+    # is corrected by the next one.
+    schedule: 1 of month 09:00
+    target: backend
+    timezone: America/Los_Angeles

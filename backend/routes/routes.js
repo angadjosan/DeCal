@@ -3,7 +3,7 @@ import multer from 'multer';
 import { adminMiddleware, authMiddleware } from '../middleware/auth.js';
 import { courseService, approvedCourseService, crossValidateCourse } from '../services/dbService.js';
 import { sendApprovalEmail, sendRejectionEmail } from '../services/emailService.js';
-import { supabase } from '../app.js';
+import { supabase, clearApprovedCoursesCache } from '../app.js';
 
 const router = express.Router();
 
@@ -46,10 +46,18 @@ export const clearUnapprovedCoursesCache = () => {
   unapprovedCoursesCache.timestamp = null;
 };
 
-// Helper function to get current semester
+// Helper function to get current semester.
+// Ordered by sort_key, NOT by the display string: ordering on `semester` is
+// lexicographic, so "Spring 2026" sorts above "Fall 2026" and new Fall
+// submissions would be stamped with the wrong semester.
+// See migrations/001_semester_sort_key.sql.
 async function getCurrentSemester() {
   try {
-      var semesters = await supabase.from('semesters').select('*').order('semester', { ascending: false });
+      const semesters = await supabase
+        .from('semesters')
+        .select('semester')
+        .order('sort_key', { ascending: false })
+        .limit(1);
       if (semesters.data && semesters.data.length > 0) {
         return semesters.data[0].semester;
       } else {
@@ -264,6 +272,9 @@ router.post('/submitCourse', uploadFields, async (req, res) => {
       });
     }
 
+    // A new submission is Pending, so it only affects the admin dashboard.
+    clearUnapprovedCoursesCache();
+
     res.status(200).json({
       success: true,
       course: data,
@@ -298,49 +309,51 @@ router.get('/unapprovedCourses', adminMiddleware, async (req, res) => {
       });
     }
 
-    // Cache miss or expired - fetch from database (fetch all courses for admin dashboard)
-    const { data: courses, error } = await courseService.getAll();
+    // Cache miss or expired - fetch from database (fetch all courses for admin
+    // dashboard). Sections and facilitators come back in the same round trip
+    // via PostgREST embedded resources, and the crossref table is fetched once
+    // and matched in memory. This previously cost 1 + 3N requests (~669 for
+    // 223 courses); it is now 2.
+    const [coursesResult, crossrefResult] = await Promise.all([
+      supabase
+        .from('courses')
+        .select('*, course_sections(*), course_facilitators(*)')
+        .order('created_at', { ascending: false }),
+      approvedCourseService.getAll()
+    ]);
+
+    const { data: courses, error } = coursesResult;
 
     if (error) {
       console.error('Error fetching unapproved courses:', error);
       return res.status(500).json({ error: 'Failed to fetch courses', details: error.message });
     }
 
-    const coursesWithValidation = await Promise.all(
-      courses.map(async (course) => {
-        const validation = await crossValidateCourse(
-          course.faculty_sponsor_email,
-          course.semester
-        );
+    // Index the crossref rows by the pair crossValidateCourse() matches on.
+    // NOTE: crossref_courses is currently empty, so every match is a miss until
+    // that data is imported.
+    const crossrefByKey = new Map();
+    for (const row of crossrefResult.data || []) {
+      const key = `${(row.instructor_of_record_email || '').toLowerCase()}|${row.semester}`;
+      if (!crossrefByKey.has(key)) {
+        crossrefByKey.set(key, row);
+      }
+    }
 
-        let approvedCourseMatch = null;
-        if (validation.match && validation.approvedCourse) {
-          approvedCourseMatch = validation.approvedCourse;
+    const coursesWithValidation = courses.map(({ course_sections, course_facilitators, ...course }) => {
+      const key = `${(course.faculty_sponsor_email || '').toLowerCase()}|${course.semester}`;
+      const approvedCourseMatch = crossrefByKey.get(key) || null;
+
+      return {
+        ...course,
+        sections: course_sections || [],
+        facilitators: course_facilitators || [],
+        crossValidation: {
+          match: approvedCourseMatch !== null,
+          approvedCourse: approvedCourseMatch
         }
-
-        // Fetch sections for this course
-        const { data: sections } = await supabase
-          .from('course_sections')
-          .select('*')
-          .eq('course_id', course.id);
-
-        // Fetch facilitators for this course
-        const { data: facilitators } = await supabase
-          .from('course_facilitators')
-          .select('*')
-          .eq('course_id', course.id);
-
-        return {
-          ...course,
-          sections: sections || [],
-          facilitators: facilitators || [],
-          crossValidation: {
-            match: validation.match,
-            approvedCourse: approvedCourseMatch
-          }
-        };
-      })
-    );
+      };
+    });
 
     const sanitizedCourses = coursesWithValidation.map(course => ({
       id: course.id,
@@ -411,6 +424,7 @@ router.post('/approveCourse', adminMiddleware, async (req, res) => {
 
     // Clear caches since data has changed
     clearUnapprovedCoursesCache();
+    clearApprovedCoursesCache();
 
     const emails = facilitatorEmails || [course.contact_email];
     if (emails && emails.length > 0) {
@@ -458,6 +472,7 @@ router.post('/rejectCourse', adminMiddleware, async (req, res) => {
 
     // Clear caches since data has changed
     clearUnapprovedCoursesCache();
+    clearApprovedCoursesCache();
 
     const emails = facilitatorEmails || [course.contact_email];
     if (emails && emails.length > 0) {
@@ -770,6 +785,7 @@ router.put('/updateCourse/:id', uploadFields, async (req, res) => {
 
     // Clear caches since data has changed
     clearUnapprovedCoursesCache();
+    clearApprovedCoursesCache();
 
     // Perform cross-validation if faculty sponsor email changed
     if (updateData.faculty_sponsor_email) {

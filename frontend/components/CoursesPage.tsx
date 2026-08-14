@@ -42,48 +42,72 @@ export function CoursesPage() {
         const response = await fetch('/api/semesters');
         const data = await response.json();
         
-        if (data.success && data.semesters) {
+        if (data.success && data.semesters && data.semesters.length > 0) {
+          // The API orders by sort_key descending, so index 0 is the newest
+          // semester (Fall 2026, not Spring 2026 as the old string sort gave).
           const semesterList = data.semesters.map((s: any) => s.semester);
           setSemesters(semesterList);
           // Set the first semester as default if not already set
-          if (semesterList.length > 0 && !selectedSemester) {
+          if (!selectedSemester) {
             setSelectedSemester(semesterList[0]);
           }
         } else {
           toast.error('Failed to load semesters');
+          // Nothing will trigger the courses fetch below, so clear the spinner.
+          setIsLoading(false);
         }
       } catch (error) {
         console.error('Error fetching semesters:', error);
         toast.error('Failed to load semesters');
+        setIsLoading(false);
       }
     };
 
     fetchSemesters();
   }, []);
 
-  // Fetch courses from backend API
+  // Fetch courses from backend API, one semester at a time.
+  // Previously this fetched every approved course ever and filtered client
+  // side, so the page downloaded ~440 KB to display a single semester and grew
+  // by roughly that much again each term. Responses are cached by the browser
+  // (Cache-Control: max-age=300), so flipping back to a semester you already
+  // viewed does not hit the network.
   useEffect(() => {
+    if (!selectedSemester) return;
+
+    const controller = new AbortController();
+
     const fetchCourses = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/approvedCourses');
+        const response = await fetch(
+          `/api/approvedCourses?semester=${encodeURIComponent(selectedSemester)}`,
+          { signal: controller.signal }
+        );
         const data = await response.json();
-        
+
         if (data.success && data.courses) {
           setCourses(data.courses);
         } else {
           toast.error('Failed to load courses');
         }
       } catch (error) {
+        if ((error as Error).name === 'AbortError') return;
         console.error('Error fetching courses:', error);
         toast.error('Failed to load courses');
       } finally {
-        setIsLoading(false);
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchCourses();
-  }, []);
+
+    // Drop the in-flight request if the user switches semester again, so a
+    // slow earlier response cannot overwrite a newer one.
+    return () => controller.abort();
+  }, [selectedSemester]);
 
   const filteredCourses = useMemo(() => {
     const filtered = courses.filter(course => {

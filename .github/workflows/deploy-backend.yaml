@@ -41,6 +41,10 @@ jobs:
       - name: Wait for backend service to be ready
         run: sleep 30
 
+      - name: Deploy cron
+        working-directory: backend
+        run: gcloud app deploy cron.yaml --quiet --project=${{ secrets.GCP_PROJECT_ID }}
+
       - name: Deploy dispatch
         run: |
           for i in {1..3}; do

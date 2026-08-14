@@ -1,12 +1,13 @@
 import express from 'express';
 import cors from 'cors';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import { createClient } from '@supabase/supabase-js';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import routes from './routes/routes.js';
 import { authMiddleware } from './middleware/auth.js';
-import { courseService } from './services/dbService.js';
+import { ensureCurrentSemester } from './cron/semesters.js';
 
 dotenv.config();
 
@@ -78,26 +79,41 @@ const privateRateLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+app.use(compression());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Cache for approved courses
-let approvedCoursesCache = {
-  data: null,
-  timestamp: null,
-  ttl: 1 * 60 * 1000 // 1 minute in milliseconds
+// Cache for approved courses, keyed by semester ('all' when unfiltered).
+// The TTL is long because course data only changes when an admin approves,
+// rejects, or edits a course -- and all three paths call
+// clearApprovedCoursesCache() below, so staleness is bounded by the write, not
+// by the TTL.
+const APPROVED_COURSES_TTL = 10 * 60 * 1000; // 10 minutes
+const approvedCoursesCache = new Map(); // key -> { data, timestamp }
+
+const readCache = (key) => {
+  const entry = approvedCoursesCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp >= APPROVED_COURSES_TTL) {
+    approvedCoursesCache.delete(key);
+    return null;
+  }
+  return entry.data;
 };
 
-// Helper function to check if cache is valid
-const isCacheValid = (cache) => {
-  return cache.data !== null && cache.timestamp !== null && (Date.now() - cache.timestamp) < cache.ttl;
-};
-
-// Function to clear the approved courses cache (can be called when courses are updated)
+// Function to clear the approved courses cache (called when courses are updated)
 export const clearApprovedCoursesCache = () => {
-  approvedCoursesCache.data = null;
-  approvedCoursesCache.timestamp = null;
+  approvedCoursesCache.clear();
+};
+
+// Cache for the semesters list -- a handful of rows that change a few times a
+// year, previously re-queried on every page load of the courses page.
+const SEMESTERS_TTL = 10 * 60 * 1000;
+let semestersCache = { data: null, timestamp: 0 };
+
+export const clearSemestersCache = () => {
+  semestersCache = { data: null, timestamp: 0 };
 };
 
 app.get('/health', publicRateLimiter, (req, res) => {
@@ -106,55 +122,80 @@ app.get('/health', publicRateLimiter, (req, res) => {
 
 app.get('/api/semesters', publicRateLimiter, async (req, res) => {
   try {
-      var semesters = await supabase.from('semesters').select('*').order('semester', { ascending: false });
-      res.status(200).json({ success: true, semesters: semesters.data });
+    if (semestersCache.data && (Date.now() - semestersCache.timestamp) < SEMESTERS_TTL) {
+      res.set('Cache-Control', 'public, max-age=300');
+      return res.status(200).json({ success: true, semesters: semestersCache.data, cached: true });
+    }
+
+    // Ordered by sort_key, NOT by the display string: ordering on `semester`
+    // is lexicographic, which puts "Spring 2026" above "Fall 2026" and makes
+    // the newest semester unreachable. See migrations/001_semester_sort_key.sql.
+    const { data, error } = await supabase
+      .from('semesters')
+      .select('*')
+      .order('sort_key', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching semesters:', error);
+      return res.status(500).json({ error: 'Failed to fetch semesters', details: error.message });
+    }
+
+    semestersCache = { data, timestamp: Date.now() };
+
+    res.set('Cache-Control', 'public, max-age=300');
+    res.status(200).json({ success: true, semesters: data, cached: false });
   } catch (error) {
     console.error('Error in semesters endpoint:', error);
     res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 
-// Public endpoint for approved courses
+// Public endpoint for approved courses.
+// Accepts an optional ?semester= filter so the courses page only downloads the
+// semester it is displaying instead of every course ever approved.
 app.get('/api/approvedCourses', publicRateLimiter, async (req, res) => {
   try {
-    // Check if cache is valid
-    if (isCacheValid(approvedCoursesCache)) {
+    const semester = typeof req.query.semester === 'string' && req.query.semester.trim()
+      ? req.query.semester.trim()
+      : null;
+    const cacheKey = semester || 'all';
+
+    const cached = readCache(cacheKey);
+    if (cached) {
+      res.set('Cache-Control', 'public, max-age=300');
       return res.status(200).json({
         success: true,
-        courses: approvedCoursesCache.data,
+        courses: cached,
         cached: true
       });
     }
 
-    // Cache miss or expired - fetch from database
-    const { data: courses, error } = await courseService.getAll('Active');
+    // Cache miss or expired - fetch from database.
+    // Sections and facilitators are pulled in the same round trip via
+    // PostgREST embedded resources. Fetching them per-course previously cost
+    // 1 + 2N requests (335 for 167 active courses, ~3.0s); this is one request
+    // (~0.45s).
+    let query = supabase
+      .from('courses')
+      .select('*, course_sections(*), course_facilitators(*)')
+      .eq('status', 'Active');
+
+    if (semester) {
+      query = query.eq('semester', semester);
+    }
+
+    const { data: courses, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching approved courses:', error);
       return res.status(500).json({ error: 'Failed to fetch courses', details: error.message });
     }
 
-    const coursesWithDetails = await Promise.all(
-      courses.map(async (course) => {
-        // Fetch sections for this course
-        const { data: sections } = await supabase
-          .from('course_sections')
-          .select('*')
-          .eq('course_id', course.id);
-
-        // Fetch facilitators for this course
-        const { data: facilitators } = await supabase
-          .from('course_facilitators')
-          .select('*')
-          .eq('course_id', course.id);
-
-        return {
-          ...course,
-          sections: sections || [],
-          facilitators: facilitators || []
-        };
-      })
-    );
+    const coursesWithDetails = courses.map(({ course_sections, course_facilitators, ...course }) => ({
+      ...course,
+      sections: course_sections || [],
+      facilitators: course_facilitators || []
+    }));
 
     const sanitizedCourses = coursesWithDetails.map(course => ({
       id: course.id,
@@ -178,9 +219,9 @@ app.get('/api/approvedCourses', publicRateLimiter, async (req, res) => {
     }));
 
     // Update cache
-    approvedCoursesCache.data = sanitizedCourses;
-    approvedCoursesCache.timestamp = Date.now();
+    approvedCoursesCache.set(cacheKey, { data: sanitizedCourses, timestamp: Date.now() });
 
+    res.set('Cache-Control', 'public, max-age=300');
     res.status(200).json({
       success: true,
       courses: sanitizedCourses,
@@ -203,8 +244,14 @@ app.get('/api/courses/:id', publicRateLimiter, async (req, res) => {
       return res.status(400).json({ error: 'Invalid course ID format' });
     }
 
-    // Fetch course by ID
-    const { data: course, error } = await courseService.getById(id);
+    // Fetch course, sections and facilitators in a single round trip.
+    // maybeSingle() returns null rather than erroring when there is no match,
+    // so a bad ID yields a 404 instead of a 500.
+    const { data: course, error } = await supabase
+      .from('courses')
+      .select('*, course_sections(*), course_facilitators(*)')
+      .eq('id', id)
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching course:', error);
@@ -220,17 +267,8 @@ app.get('/api/courses/:id', publicRateLimiter, async (req, res) => {
       return res.status(404).json({ error: 'Course not found' });
     }
 
-    // Fetch sections for this course
-    const { data: sections } = await supabase
-      .from('course_sections')
-      .select('*')
-      .eq('course_id', course.id);
-
-    // Fetch facilitators for this course
-    const { data: facilitators } = await supabase
-      .from('course_facilitators')
-      .select('*')
-      .eq('course_id', course.id);
+    const sections = course.course_sections;
+    const facilitators = course.course_facilitators;
 
     // Sanitize response - only return public fields
     const sanitizedCourse = {
@@ -254,6 +292,7 @@ app.get('/api/courses/:id', publicRateLimiter, async (req, res) => {
       facilitators: facilitators || []
     };
 
+    res.set('Cache-Control', 'public, max-age=300');
     res.status(200).json({
       success: true,
       course: sanitizedCourse
@@ -353,6 +392,29 @@ app.get('/api/downloadSyllabus/:courseId', publicRateLimiter, async (req, res) =
   } catch (error) {
     console.error('Error in downloadSyllabus endpoint:', error);
     res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
+// Invoked by App Engine cron (see cron.yaml). Registered under /api so
+// dispatch.yaml routes it to this service, and above the authMiddleware mount
+// below so it is not treated as a user request.
+//
+// App Engine strips X-Appengine-Cron from inbound external requests, so its
+// presence proves the call originated from the cron service.
+app.get('/api/tasks/ensureSemester', publicRateLimiter, async (req, res) => {
+  if (process.env.NODE_ENV === 'production' && req.get('X-Appengine-Cron') !== 'true') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  try {
+    const result = await ensureCurrentSemester(supabase);
+    if (result.inserted) {
+      clearSemestersCache();
+    }
+    res.status(200).json({ success: true, ...result });
+  } catch (error) {
+    console.error('Error ensuring current semester:', error);
+    res.status(500).json({ error: 'Failed to ensure semester', details: error.message });
   }
 });
 

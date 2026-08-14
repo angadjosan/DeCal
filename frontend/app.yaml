@@ -2,16 +2,26 @@ runtime: nodejs20
 service: default
 
 handlers:
-  # Serve built static assets (JS, CSS, images)
+  # Serve built static assets (JS, CSS, images).
+  # Vite content-hashes every filename in dist/assets, so a changed file gets a
+  # new URL and these can be cached permanently.
   - url: /assets
     static_dir: dist/assets
     secure: always
+    expiration: 365d
+    http_headers:
+      Cache-Control: "public, max-age=31536000, immutable"
 
   # SPA fallback: all other routes -> index.html
+  # index.html must NOT be cached, otherwise browsers keep loading the old
+  # build's hashed asset URLs after a deploy.
   - url: /.*
     static_files: dist/index.html
     upload: dist/index.html
     secure: always
+    expiration: 0s
+    http_headers:
+      Cache-Control: "no-cache, must-revalidate"
 
 automatic_scaling:
   min_instances: 0
