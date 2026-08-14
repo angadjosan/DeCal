@@ -45,8 +45,7 @@ export async function ensureCurrentSemester(supabase, now = new Date()) {
   const semester = semesterForDate(now);
   const sort_key = semesterSortKey(semester);
 
-  // Relies on the unique index on semesters.semester created in
-  // migrations/001_semester_sort_key.sql.
+  // Relies on the unique index on semesters.semester.
   const { data, error } = await supabase
     .from('semesters')
     .upsert({ semester, sort_key }, { onConflict: 'semester', ignoreDuplicates: true })

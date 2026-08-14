@@ -129,7 +129,8 @@ app.get('/api/semesters', publicRateLimiter, async (req, res) => {
 
     // Ordered by sort_key, NOT by the display string: ordering on `semester`
     // is lexicographic, which puts "Spring 2026" above "Fall 2026" and makes
-    // the newest semester unreachable. See migrations/001_semester_sort_key.sql.
+    // the newest semester unreachable. sort_key is year * 10 + season
+    // (Spring 0, Summer 1, Fall 2), so Fall 2026 is 20262.
     const { data, error } = await supabase
       .from('semesters')
       .select('*')

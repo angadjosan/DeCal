@@ -50,7 +50,7 @@ export const clearUnapprovedCoursesCache = () => {
 // Ordered by sort_key, NOT by the display string: ordering on `semester` is
 // lexicographic, so "Spring 2026" sorts above "Fall 2026" and new Fall
 // submissions would be stamped with the wrong semester.
-// See migrations/001_semester_sort_key.sql.
+// sort_key is year * 10 + season (Spring 0, Summer 1, Fall 2).
 async function getCurrentSemester() {
   try {
       const semesters = await supabase
