@@ -85,11 +85,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Cache for approved courses, keyed by semester ('all' when unfiltered).
-// The TTL is long because course data only changes when an admin approves,
-// rejects, or edits a course -- and all three paths call
-// clearApprovedCoursesCache() below, so staleness is bounded by the write, not
-// by the TTL.
-const APPROVED_COURSES_TTL = 10 * 60 * 1000; // 10 minutes
+// Writes that go through this backend call clearApprovedCoursesCache() below,
+// so the TTL only matters when the data changes some other way -- a direct DB
+// edit, or an approval run against a local server. It also bounds how long a
+// single App Engine instance can disagree with its siblings, since each holds
+// its own copy of this Map. Both were 10 minutes of stale course listings; one
+// minute keeps the cache useful while making that window short.
+const APPROVED_COURSES_TTL = 1 * 60 * 1000; // 1 minute
 const approvedCoursesCache = new Map(); // key -> { data, timestamp }
 
 const readCache = (key) => {
