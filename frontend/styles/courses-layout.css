@@ -1,0 +1,67 @@
+/*
+ * Split-pane scrolling for the courses dashboard.
+ *
+ * The filter sidebar and the course grid are two independent scroll
+ * containers on desktop, so scrolling the grid never has to bottom out
+ * before the filters will move (and vice versa). Below the `lg` breakpoint
+ * the two stack into one column and the page scrolls as a whole, since a
+ * narrow viewport has nowhere to put a second scroller.
+ *
+ * These live in plain CSS rather than Tailwind utilities because the
+ * project's index.css is a pre-compiled stylesheet: classes that were not
+ * used when it was generated produce no rules.
+ */
+
+.courses-page__header {
+  padding-top: 2rem;
+}
+
+.courses-page__body {
+  padding-bottom: 2rem;
+}
+
+@media (min-width: 1024px) {
+  /* Fill the viewport below the fixed 4rem nav and hand scrolling to the
+     two panes instead of the document. */
+  .courses-page {
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .courses-page__header {
+    flex: 0 0 auto;
+  }
+
+  /* min-height: 0 lets the panes shrink inside the flex column instead of
+     growing to their content height. */
+  .courses-page__body {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .courses-page__columns,
+  .courses-page__sidebar {
+    height: 100%;
+    min-height: 0;
+  }
+
+  /* The card keeps its frame in place and scrolls its contents, and only
+     when the filters are actually taller than the viewport. */
+  .courses-page__sidebar-card {
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .courses-page__grid {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    /* Breathing room under the last row of cards. */
+    padding-bottom: 2rem;
+  }
+}

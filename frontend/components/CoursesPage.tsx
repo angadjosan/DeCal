@@ -9,6 +9,7 @@ import { Slider } from './ui/slider';
 import { Course } from '../types';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
+import '../styles/courses-layout.css';
 
 export function CoursesPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -217,18 +218,24 @@ export function CoursesPage() {
     setSelectedCourse(null);
   };
 
+  // On desktop the page itself does not scroll: the viewport below the fixed
+  // nav is split into a sidebar pane and a course-grid pane that scroll
+  // independently (see styles/courses-layout.css). Below the lg breakpoint the
+  // two stack and the page scrolls as one column.
   return (
-    <div className="min-h-screen bg-gray-50 pt-16">
+    <div className="min-h-screen bg-gray-50 pt-16 courses-page">
       {/* Main Content */}
-      <div className="max-w-[1440px] mx-auto px-6 py-8">
+      <div className="max-w-[1440px] mx-auto px-6 courses-page__header">
         <div className="mb-8">
           <h1 className="text-[#003262] mb-2">Courses Dashboard</h1>
         </div>
+      </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Filter Sidebar */}
-          <aside className="lg:w-[280px] flex-shrink-0">
-            <div className="bg-white border border-gray-200 rounded-lg p-6 sticky top-24">
+      <div className="max-w-[1440px] mx-auto px-6 courses-page__body">
+        <div className="flex flex-col lg:flex-row gap-8 courses-page__columns">
+          {/* Filter Sidebar — scrolls on its own */}
+          <aside className="lg:w-[280px] flex-shrink-0 courses-page__sidebar">
+            <div className="bg-white border border-gray-200 rounded-lg p-6 courses-page__sidebar-card">
               {/* Semester Selector */}
               <div className="mb-6">
                 <h4 className="mb-3 text-gray-900">Semester</h4>
@@ -336,8 +343,8 @@ export function CoursesPage() {
             </div>
           </aside>
 
-          {/* Course Grid */}
-          <div className="flex-1">
+          {/* Course Grid — scrolls on its own */}
+          <div className="flex-1 min-w-0 courses-page__grid">
             {isLoading ? (
               <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
                 <p className="text-gray-600">Loading courses...</p>
